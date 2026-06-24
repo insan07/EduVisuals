@@ -4,12 +4,15 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, X, Clock, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSearchStore } from "@/lib/searchStore";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 interface SearchBarProps {
   initialValue?: string;
   placeholder?: string;
   className?: string;
   showSuggestionsInline?: boolean;
+  darkHero?: boolean;
+  onSubmit?: (term: string) => void;
 }
 
 export default function SearchBar({
@@ -17,6 +20,8 @@ export default function SearchBar({
   placeholder = "Search educational diagrams, mind maps, layouts...",
   className = "",
   showSuggestionsInline = false,
+  darkHero = false,
+  onSubmit,
 }: SearchBarProps) {
   const router = useRouter();
   const setStoreQuery = useSearchStore((state) => state.setQuery);
@@ -91,19 +96,50 @@ export default function SearchBar({
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Auto-complete suggestion filter
-    if (val.trim()) {
-      const filtered = popularSubjects.filter((s) =>
-        s.toLowerCase().includes(val.toLowerCase())
-      );
-      setSuggestions(filtered);
-    } else {
+    if (!val.trim()) {
       setSuggestions([]);
+      debounceTimerRef.current = setTimeout(() => setStoreQuery(val), 300);
+      return;
     }
 
-    debounceTimerRef.current = setTimeout(() => {
+    // Instantly show static suggestions for immediate UI feedback
+    const instantFiltered = popularSubjects.filter((s) =>
+      s.toLowerCase().includes(val.toLowerCase())
+    );
+    setSuggestions(instantFiltered);
+
+    debounceTimerRef.current = setTimeout(async () => {
       // Trigger Zustand store search
       setStoreQuery(val);
+
+      // Live Supabase Autocomplete
+      if (isSupabaseConfigured()) {
+        try {
+          // Query both titles and tags for rich suggestions
+          const [titleRes, tagRes] = await Promise.all([
+            supabase.from("images").select("title").ilike("title", `%${val}%`).eq("status", "approved").limit(4),
+            supabase.from("image_tags").select("tag").ilike("tag", `%${val}%`).limit(3)
+          ]);
+
+          const combined = new Set<string>();
+          
+          if (titleRes.data) {
+            titleRes.data.forEach((d: { title: string }) => combined.add(d.title));
+          }
+          if (tagRes.data) {
+            tagRes.data.forEach((d: { tag: string }) => combined.add(d.tag));
+          }
+
+          if (combined.size > 0) {
+            setSuggestions(Array.from(combined));
+          }
+          // If combined is 0, we just keep the instant static suggestions we already set
+        } catch (err) {
+          console.error("Search suggestion error:", err);
+          // Keep instant suggestions
+        }
+      }
+      // If not configured, we just keep the instant static suggestions
     }, 300);
   };
 
@@ -112,9 +148,13 @@ export default function SearchBar({
     saveRecentSearch(queryTerm);
     setShowDropdown(false);
     
-    // Update store query and navigate to search page
     setStoreQuery(queryTerm);
-    router.push(`/visuals?q=${encodeURIComponent(queryTerm)}`);
+
+    if (onSubmit) {
+      onSubmit(queryTerm);
+    } else {
+      router.push(`/visuals?q=${encodeURIComponent(queryTerm)}`);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -167,9 +207,13 @@ export default function SearchBar({
           e.preventDefault();
           handleSearchSubmit(inputVal);
         }}
-        className="relative w-full flex items-center bg-[#f3f3f3] border border-brand-border focus-within:border-brand focus-within:ring-4 focus-within:ring-[#073238]/5 rounded-full transition-all duration-300"
+        className={`relative w-full flex items-center transition-all duration-300 ${
+          darkHero 
+            ? "bg-white/10 backdrop-blur-xl border border-white/20 focus-within:bg-white/20 focus-within:ring-2 focus-within:ring-emerald-400/50 rounded-2xl shadow-inner" 
+            : "bg-[#f3f3f3] border border-brand-border focus-within:border-brand focus-within:ring-4 focus-within:ring-[#073238]/5 rounded-full"
+        }`}
       >
-        <div className="absolute left-4 text-brand-faint pointer-events-none">
+        <div className={`absolute left-4 pointer-events-none ${darkHero ? "text-white/60" : "text-brand-faint"}`}>
           <Search className="w-5 h-5" />
         </div>
 
@@ -180,19 +224,40 @@ export default function SearchBar({
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => setShowDropdown(true)}
           onKeyDown={handleKeyDown}
-          className="w-full bg-transparent pl-11 pr-12 py-3.5 text-sm text-brand placeholder:text-[rgba(0,57,60,0.45)] outline-none rounded-full"
+          className={`w-full bg-transparent pl-11 pr-32 py-4 outline-none ${
+            darkHero 
+              ? "text-base md:text-lg font-semibold text-white placeholder:text-white/60 rounded-2xl" 
+              : "text-sm text-brand placeholder:text-[rgba(0,57,60,0.45)] rounded-full"
+          }`}
         />
 
-        {/* Clear input button */}
-        {inputVal && (
-          <button
-            type="button"
-            onClick={clearSearch}
-            className="absolute right-4 p-1 rounded-full text-brand-faint hover:text-brand hover:bg-slate-200/50 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+        <div className="absolute right-2 flex items-center gap-1">
+          {inputVal && !darkHero && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="p-1 rounded-full text-brand-faint hover:text-brand hover:bg-slate-200/50 transition-colors mr-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+          {darkHero ? (
+            <button
+              type="submit"
+              className="px-6 py-2.5 rounded-xl text-sm font-extrabold transition-all shadow-md active:scale-95 bg-white text-brand"
+            >
+              Search
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-full text-sm font-bold transition-all shadow-sm active:scale-95 bg-brand text-white hover:bg-[#00393c] flex items-center gap-2"
+            >
+              <span className="hidden sm:inline">Search</span>
+              <Search className="w-4 h-4 sm:hidden" />
+            </button>
+          )}
+        </div>
       </form>
 
       {/* 2. AUTO-COMPLETE DROPDOWN */}

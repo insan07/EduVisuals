@@ -234,6 +234,11 @@ export default function ContributorUploadPortal() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload only image files (SVG, PNG, JPG, JPEG).");
+      return;
+    }
+
     if (fileType === "main") {
       setSelectedFile(file);
       const url = URL.createObjectURL(file);
@@ -571,14 +576,14 @@ export default function ContributorUploadPortal() {
                         <div className="flex flex-col items-center gap-3">
                           <Upload className="w-10 h-10 text-[rgba(0,57,60,0.3)]" />
                           <p className="text-sm font-bold text-[rgba(0,57,60,0.7)]">Click to select or drag and drop</p>
-                          <p className="text-[10px] text-brand-faint">SVG · PNG · JPG · PDF — Maximum 20MB</p>
+                          <p className="text-[10px] text-brand-faint">SVG · PNG · JPG · JPEG — Maximum 20MB</p>
                         </div>
                       )}
                     </div>
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept=".svg,.png,.jpg,.jpeg,.pdf"
+                      accept=".svg,.png,.jpg,.jpeg,image/*"
                       className="hidden"
                       onChange={(e) => handleFileSelect(e, "main")}
                     />
@@ -668,7 +673,7 @@ export default function ContributorUploadPortal() {
                   {uploading && (
                     <div className="flex flex-col gap-2">
                       <div className="flex justify-between text-[10px] font-bold text-brand-muted">
-                        <span>Uploading to Supabase Storage...</span>
+                        <span>Securely uploading visual...</span>
                         <span>{uploadProgress}%</span>
                       </div>
                       <div className="h-2 bg-[#f3f3f3] rounded-full overflow-hidden">

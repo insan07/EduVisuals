@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useAuthModal } from "@/store/useAuthModal";
+import SearchBar from "@/components/SearchBar";
 import {
-  Search,
   Filter,
   Grid,
   List,
@@ -88,7 +88,6 @@ function SearchResultsContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [searchInput, setSearchInput] = useState(q);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     grade: true, subject: true, type: false, syllabus: false, medium: false,
@@ -202,9 +201,8 @@ function SearchResultsContent() {
   }, [searchParamsStr]);
 
   /* ── Search submit ── */
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateParams({ q: searchInput || null });
+  const handleSearchSubmit = (term: string) => {
+    updateParams({ q: term || null });
   };
 
   /* ── Download handler ── */
@@ -322,38 +320,11 @@ function SearchResultsContent() {
 
           {/* ── Search Bar and Tabs ── */}
           <div className="bg-white p-3 md:p-5 rounded-2xl border border-[rgba(0,57,60,0.08)] mb-4 md:mb-5 flex flex-col gap-3 md:gap-4">
-            <form onSubmit={handleSearch} style={{ position: "relative", width: "100%" }}>
-              <Search
-                size={18}
-                style={{
-                  position: "absolute", left: "1rem", top: "50%",
-                  transform: "translateY(-50%)", color: "rgba(0,57,60,0.4)", zIndex: 1,
-                }}
-              />
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search visuals by title…"
-                style={{
-                  width: "100%", padding: "0.75rem 1rem 0.75rem 2.75rem",
-                  borderRadius: "0.75rem", border: "1px solid rgba(0,57,60,0.15)", outline: "none",
-                  fontSize: "0.95rem", background: "#f8f9fa", color: "#00393c",
-                  boxSizing: "border-box",
-                }}
-              />
-              <button
-                type="submit"
-                style={{
-                  position: "absolute", right: "0.375rem", top: "50%",
-                  transform: "translateY(-50%)", background: "#073238", color: "#fff",
-                  border: "none", borderRadius: "0.5rem", padding: "0.45rem 1rem",
-                  fontSize: "0.85rem", fontWeight: 600, cursor: "pointer",
-                }}
-              >
-                Search
-              </button>
-            </form>
+            <SearchBar 
+              initialValue={q} 
+              onSubmit={handleSearchSubmit} 
+              className="w-full"
+            />
 
             {/* ── Content Type Tabs ── */}
             <div style={{ display: "flex", gap: "0.5rem", width: "100%", justifyContent: "flex-start", flexWrap: "wrap" }}>

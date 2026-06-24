@@ -42,128 +42,51 @@ export default function ContactPage() {
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-brand-border mb-4 shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-brand" />
             <span className="text-[10px] font-black uppercase text-brand tracking-wider">
-              24/7 Support Desk
+              Reach Out
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-brand tracking-tight leading-none mb-3">
-            Contact Support Team
+            Contact Us
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-brand-muted max-w-xl mx-auto font-medium">
-            Have questions about your Premium subscription, billing, or suggestions? Reach out directly.
+            Have questions or suggestions? Reach out directly.
           </p>
         </div>
 
-        {/* DETAILS & FORM GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-stretch">
+        {/* DETAILS GRID */}
+        <div className="flex flex-col sm:flex-row justify-center gap-6 mt-4">
           
-          {/* Contact Details (2 columns) */}
-          <div className="md:col-span-2 flex flex-col gap-4">
-            
-            {/* Box 1: Email */}
-            <div className="bg-white border border-brand-border p-5 rounded-2xl shadow-sm flex items-start gap-4">
-              <div className="w-9 h-9 rounded-lg bg-[#f3f3f3] flex items-center justify-center text-brand border border-brand-border flex-shrink-0">
-                <Mail className="w-4.5 h-4.5" />
-              </div>
-              <div className="flex flex-col text-xs font-semibold">
-                <span className="text-[10px] font-bold text-brand-faint uppercase">Email Support Desk</span>
-                <span className="text-brand font-black mt-1">support@eduvisuals.lk</span>
-                <span className="text-[10px] text-[rgba(0,57,60,0.5)] mt-0.5">Average response time: 2 hours</span>
-              </div>
+          {/* Box 1: Email */}
+          <div className="bg-white border border-brand-border p-6 rounded-2xl shadow-sm flex items-start gap-4 flex-1 max-w-xs">
+            <div className="w-10 h-10 rounded-lg bg-[#f3f3f3] flex items-center justify-center text-brand border border-brand-border flex-shrink-0">
+              <Mail className="w-5 h-5" />
             </div>
-
-            {/* Box 2: Phone */}
-            <div className="bg-white border border-brand-border p-5 rounded-2xl shadow-sm flex items-start gap-4">
-              <div className="w-9 h-9 rounded-lg bg-[#f3f3f3] flex items-center justify-center text-brand border border-brand-border flex-shrink-0">
-                <Phone className="w-4.5 h-4.5" />
-              </div>
-              <div className="flex flex-col text-xs font-semibold">
-                <span className="text-[10px] font-bold text-brand-faint uppercase">Direct Hotline</span>
-                <span className="text-brand font-black mt-1">+94 (11) 234-5678</span>
-                <span className="text-[10px] text-[rgba(0,57,60,0.5)] mt-0.5">Mon - Fri: 8:00 AM - 5:00 PM</span>
-              </div>
+            <div className="flex flex-col text-xs font-semibold">
+              <span className="text-[10px] font-bold text-brand-faint uppercase">Email</span>
+              <span className="text-brand font-black mt-1.5 text-sm">mohamedinsan07@gmail.com</span>
             </div>
-
-            {/* Box 3: Address */}
-            <div className="bg-white border border-brand-border p-5 rounded-2xl shadow-sm flex items-start gap-4">
-              <div className="w-9 h-9 rounded-lg bg-[#f3f3f3] flex items-center justify-center text-brand border border-brand-border flex-shrink-0">
-                <MapPin className="w-4.5 h-4.5" />
-              </div>
-              <div className="flex flex-col text-xs font-semibold">
-                <span className="text-[10px] font-bold text-brand-faint uppercase">Headquarters</span>
-                <span className="text-brand font-black mt-1">123 Galle Road, Colombo 03, Sri Lanka</span>
-              </div>
-            </div>
-
           </div>
 
-          {/* Contact Form (3 columns) */}
-          <div className="md:col-span-3 bg-white border border-brand-border p-6 md:p-8 rounded-3xl shadow-sm">
-            <h3 className="font-extrabold text-sm text-brand border-b border-brand-border pb-3.5 mb-5 flex items-center gap-1.5">
-              <HelpCircle className="w-4.5 h-4.5 text-brand" />
-              Submit Help Ticket
-            </h3>
+          {/* Box 2: Phone */}
+          <div className="bg-white border border-brand-border p-6 rounded-2xl shadow-sm flex items-start gap-4 flex-1 max-w-xs">
+            <div className="w-10 h-10 rounded-lg bg-[#f3f3f3] flex items-center justify-center text-brand border border-brand-border flex-shrink-0">
+              <Phone className="w-5 h-5" />
+            </div>
+            <div className="flex flex-col text-xs font-semibold">
+              <span className="text-[10px] font-bold text-brand-faint uppercase">Direct Hotline</span>
+              <span className="text-brand font-black mt-1.5 text-sm">+94 77 991 0080</span>
+            </div>
+          </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs font-semibold">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-brand-faint uppercase">Your Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Mohamed Insan"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-[#f3f3f3] border border-brand-border text-brand placeholder:text-[rgba(0,57,60,0.5)] px-3.5 py-3 rounded-xl outline-none focus:border-brand transition-all"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-brand-faint uppercase">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="e.g. insan@gmail.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#f3f3f3] border border-brand-border text-brand placeholder:text-[rgba(0,57,60,0.5)] px-3.5 py-3 rounded-xl outline-none focus:border-brand transition-all"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-brand-faint uppercase">Reason for Contact</label>
-                <select
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  className="w-full bg-[#f3f3f3] border border-brand-border text-brand px-3.5 py-3 rounded-xl outline-none"
-                >
-                  <option>General Support</option>
-                  <option>Billing / Premium Inquiry</option>
-                  <option>Content Contribution</option>
-                  <option>School Partnerships</option>
-                  <option>Report Content / Error</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-brand-faint uppercase">Detailed Message</label>
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Type your message or inquiry here..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="w-full bg-[#f3f3f3] border border-brand-border text-brand placeholder:text-[rgba(0,57,60,0.5)] px-3.5 py-3 rounded-xl outline-none focus:border-brand transition-all resize-none"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={sent}
-                className="w-full bg-brand hover:bg-brand disabled:opacity-50 text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow flex items-center justify-center gap-1.5 mt-2"
-              >
-                <Send className="w-4 h-4" />
-                {sent ? "Sending..." : "Submit Ticket"}
-              </button>
-            </form>
+          {/* Box 3: Address */}
+          <div className="bg-white border border-brand-border p-6 rounded-2xl shadow-sm flex items-start gap-4 flex-1 max-w-xs">
+            <div className="w-10 h-10 rounded-lg bg-[#f3f3f3] flex items-center justify-center text-brand border border-brand-border flex-shrink-0">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <div className="flex flex-col text-xs font-semibold">
+              <span className="text-[10px] font-bold text-brand-faint uppercase">Location</span>
+              <span className="text-brand font-black mt-1.5 text-sm">Puttalam, Sri Lanka</span>
+            </div>
           </div>
 
         </div>

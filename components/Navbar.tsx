@@ -21,7 +21,9 @@ import {
   Mail,
   Info,
   HelpCircle,
-  Users
+  Users,
+  LayoutDashboard as LayoutDashboardIcon,
+  User as UserIcon
 } from "lucide-react";
 import { useAuthModal } from "@/store/useAuthModal";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -221,7 +223,7 @@ export default function Navbar() {
                       About Us
                     </Link>
                     <Link
-                      href="/contact?subject=Billing"
+                      href="/help"
                       className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
                     >
                       <HelpCircle className="w-3.5 h-3.5 text-brand-muted" />
@@ -268,76 +270,156 @@ export default function Navbar() {
                   </span>
                 </button>
 
-                  {/* Dropdown Menu */}
+                  {/* Dropdown Menu / Mobile Bottom Sheet */}
                   {showProfileDropdown && (
-                    <div className="absolute top-[calc(100%+12px)] right-0 md:-right-2 w-56 bg-white border border-brand-border rounded-2xl shadow-2xl py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200 text-xs font-semibold text-brand">
-                      <div className="px-4 py-2.5 border-b border-brand-border flex flex-col select-none">
-                        <span className="font-black truncate">{user.name}</span>
-                        <span className="text-[9px] uppercase tracking-wide text-[rgba(0,57,60,0.5)] font-bold mt-0.5">{user.displayRole} · {user.tier} Tier</span>
-                      </div>
-                      
-                      <div className="py-1">
-                        {[
-                          { label: "Overview Dashboard", tab: "overview", icon: HomeIcon },
-                          { label: "My Downloads", tab: "downloads", icon: DownloadIcon },
-                          { label: "Saved Collections", tab: "collections", icon: HeartIcon },
-                          { label: "Subscription Billing", tab: "subscription", icon: StarIcon },
-                          { label: "Account Settings", tab: "settings", icon: SettingsIcon },
-                        ].map((item) => (
-                          <Link
-                            key={item.tab}
-                            href={`/dashboard?tab=${item.tab}`}
-                            onClick={() => {
-                              setShowProfileDropdown(false);
-                              setTimeout(() => {
-                                window.dispatchEvent(new Event("dashboard-tab-changed"));
-                              }, 50);
-                            }}
-                            className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
-                          >
-                            <item.icon className="w-3.5 h-3.5 text-brand-muted" />
-                            {item.label}
-                          </Link>
-                        ))}
+                    <>
+                      {/* --- MOBILE ONLY BOTTOM SHEET --- */}
+                      <div className="md:hidden fixed inset-0 z-[100] flex flex-col justify-end">
+                        <div 
+                          className="absolute inset-0 bg-brand/40 backdrop-blur-sm transition-opacity" 
+                          onClick={() => setShowProfileDropdown(false)} 
+                        />
+                        <div className="relative w-full bg-white rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-8">
+                          <div className="w-12 h-1.5 bg-brand-border rounded-full mx-auto my-3" />
+                          <div className="px-6 py-4 border-b border-brand-border">
+                            <span className="font-black text-lg block text-brand">{user.name}</span>
+                            <span className="text-xs uppercase tracking-wide text-brand-muted font-bold mt-1">{user.displayRole} · {user.tier} Tier</span>
+                          </div>
+                          
+                          <div className="py-2 px-4 flex flex-col gap-1 max-h-[60vh] overflow-y-auto">
+                            {[
+                              { label: "Overview Dashboard", tab: "overview", icon: HomeIcon },
+                              { label: "My Downloads", tab: "downloads", icon: DownloadIcon },
+                              { label: "Saved Collections", tab: "collections", icon: HeartIcon },
+                              { label: "Subscription Billing", tab: "subscription", icon: StarIcon },
+                              { label: "Account Settings", tab: "settings", icon: SettingsIcon },
+                            ].map((item) => (
+                              <Link
+                                key={item.tab}
+                                href={`/dashboard?tab=${item.tab}`}
+                                onClick={() => {
+                                  setShowProfileDropdown(false);
+                                  setTimeout(() => {
+                                    window.dispatchEvent(new Event("dashboard-tab-changed"));
+                                  }, 50);
+                                }}
+                                className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#f3f3f3] rounded-xl text-brand transition-colors"
+                              >
+                                <item.icon className="w-5 h-5 text-brand-muted" />
+                                <span className="font-bold text-[rgba(0,57,60,0.85)]">{item.label}</span>
+                              </Link>
+                            ))}
+
+                            {/* Creator or Admin actions */}
+                            {(user.role === "admin" || user.role === "moderator" || user.role === "team_creator") && (
+                              <div className="border-t border-brand-border mt-2 pt-2 flex flex-col gap-1">
+                                {(user.role === "admin" || user.role === "moderator") && (
+                                  <Link
+                                    href="/admin"
+                                    onClick={() => setShowProfileDropdown(false)}
+                                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#f3f3f3] rounded-xl text-brand transition-colors"
+                                  >
+                                    <ShieldIcon className="w-5 h-5 text-brand-muted" />
+                                    <span className="font-bold text-[rgba(0,57,60,0.85)]">Admin Panel</span>
+                                  </Link>
+                                )}
+                                <Link
+                                  href="/upload"
+                                  onClick={() => setShowProfileDropdown(false)}
+                                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#f3f3f3] rounded-xl text-brand transition-colors"
+                                >
+                                  <UploadIcon className="w-5 h-5 text-brand-muted" />
+                                  <span className="font-bold text-[rgba(0,57,60,0.85)]">Upload Portal</span>
+                                </Link>
+                              </div>
+                            )}
+
+                            <div className="border-t border-brand-border mt-2 pt-2">
+                              <button
+                                onClick={() => {
+                                  setShowProfileDropdown(false);
+                                  handleSignOut();
+                                }}
+                                className="w-full text-left flex items-center gap-3 px-4 py-3.5 hover:bg-red-50 text-red-600 hover:text-red-700 rounded-xl transition-colors cursor-pointer"
+                              >
+                                <LogOutIcon className="w-5 h-5" />
+                                <span className="font-bold">Sign Out</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Creator or Admin actions */}
-                      {(user.role === "admin" || user.role === "moderator" || user.role === "team_creator") && (
-                        <div className="border-t border-brand-border py-1">
-                          {(user.role === "admin" || user.role === "moderator") && (
+                      {/* --- DESKTOP ONLY DROPDOWN --- */}
+                      <div className="hidden md:block absolute top-[calc(100%+12px)] right-0 md:-right-2 w-64 bg-white border border-brand-border rounded-2xl shadow-2xl py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200 text-xs font-semibold text-brand">
+                        <div className="px-4 py-2.5 border-b border-brand-border flex flex-col select-none">
+                          <span className="font-black truncate">{user.name}</span>
+                          <span className="text-[9px] uppercase tracking-wide text-[rgba(0,57,60,0.5)] font-bold mt-0.5">{user.displayRole} · {user.tier} Tier</span>
+                        </div>
+                        
+                        <div className="py-1">
+                          {[
+                            { label: "Overview Dashboard", tab: "overview", icon: HomeIcon },
+                            { label: "My Downloads", tab: "downloads", icon: DownloadIcon },
+                            { label: "Saved Collections", tab: "collections", icon: HeartIcon },
+                            { label: "Subscription Billing", tab: "subscription", icon: StarIcon },
+                            { label: "Account Settings", tab: "settings", icon: SettingsIcon },
+                          ].map((item) => (
                             <Link
-                              href="/admin"
+                              key={item.tab}
+                              href={`/dashboard?tab=${item.tab}`}
+                              onClick={() => {
+                                setShowProfileDropdown(false);
+                                setTimeout(() => {
+                                  window.dispatchEvent(new Event("dashboard-tab-changed"));
+                                }, 50);
+                              }}
+                              className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
+                            >
+                              <item.icon className="w-3.5 h-3.5 text-brand-muted" />
+                              {item.label}
+                            </Link>
+                          ))}
+                        </div>
+
+                        {/* Creator or Admin actions */}
+                        {(user.role === "admin" || user.role === "moderator" || user.role === "team_creator") && (
+                          <div className="border-t border-brand-border py-1">
+                            {(user.role === "admin" || user.role === "moderator") && (
+                              <Link
+                                href="/admin"
+                                onClick={() => setShowProfileDropdown(false)}
+                                className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
+                              >
+                                <ShieldIcon className="w-3.5 h-3.5 text-brand-muted" />
+                                Admin Panel
+                              </Link>
+                            )}
+                            <Link
+                              href="/upload"
                               onClick={() => setShowProfileDropdown(false)}
                               className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
                             >
-                              <ShieldIcon className="w-3.5 h-3.5 text-brand-muted" />
-                              Admin Panel
+                              <UploadIcon className="w-3.5 h-3.5 text-brand-muted" />
+                              Upload Portal
                             </Link>
-                          )}
-                          <Link
-                            href="/upload"
-                            onClick={() => setShowProfileDropdown(false)}
-                            className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
-                          >
-                            <UploadIcon className="w-3.5 h-3.5 text-brand-muted" />
-                            Upload Portal
-                          </Link>
-                        </div>
-                      )}
+                          </div>
+                        )}
 
-                      <div className="border-t border-brand-border pt-1">
-                        <button
-                          onClick={() => {
-                            setShowProfileDropdown(false);
-                            handleSignOut();
-                          }}
-                          className="w-full text-left flex items-center gap-2.5 px-4 py-2 hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors font-bold cursor-pointer"
-                        >
-                          <LogOutIcon className="w-3.5 h-3.5" />
-                          Sign Out
-                        </button>
+                        <div className="border-t border-brand-border pt-1">
+                          <button
+                            onClick={() => {
+                              setShowProfileDropdown(false);
+                              handleSignOut();
+                            }}
+                            className="w-full text-left flex items-center gap-2.5 px-4 py-2 hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors font-bold cursor-pointer"
+                          >
+                            <LogOutIcon className="w-3.5 h-3.5" />
+                            Sign Out
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
               ) : (
@@ -375,7 +457,6 @@ export default function Navbar() {
       {isOpen && (
         <div className="fixed inset-0 bg-brand-surface z-40 flex flex-col justify-between pt-24 pb-8 px-6 md:hidden animate-in fade-in duration-300 overflow-y-auto">
           <div className="flex flex-col gap-6">
-
 
             {/* Mobile Nav Links */}
             <nav className="flex flex-col gap-4 mt-2">
@@ -422,8 +503,8 @@ export default function Navbar() {
                       <Info className="w-4 h-4 text-[rgba(0,57,60,0.5)]" />
                       About Us
                     </Link>
-                    <Link
-                      href="/contact?subject=Billing"
+                    <Link 
+                      href="/help" 
                       onClick={toggleMenu}
                       className="flex items-center gap-2.5 text-sm font-bold text-[rgba(0,57,60,0.7)] hover:text-brand transition-colors py-0.5"
                     >
@@ -447,8 +528,8 @@ export default function Navbar() {
           </div>
 
           {/* User Section at the bottom */}
-          <div className="flex flex-col gap-3 mt-8">
-            {!user && (
+          {!user && (
+            <div className="flex flex-col gap-3 mt-8 border-t border-brand-border/30 pt-6">
               <div className="flex flex-col gap-3">
                 <button
                   onClick={() => {
@@ -469,8 +550,8 @@ export default function Navbar() {
                   Sign Up
                 </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </>

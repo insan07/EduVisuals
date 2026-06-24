@@ -7,6 +7,7 @@ import heroBg from "../public/hero_bg.png";
 import { useRouter } from "next/navigation";
 import { useAuthModal } from "@/store/useAuthModal";
 import { useAuth } from "@/hooks/useAuth";
+import SearchBar from "@/components/SearchBar";
 import { 
   Search, 
   ArrowRight, 
@@ -23,7 +24,6 @@ export default function Home() {
   const router = useRouter();
   const openAuth = useAuthModal((state) => state.open);
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -32,15 +32,6 @@ export default function Home() {
       window.history.replaceState({}, "", "/");
     }
   }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/visuals?q=${encodeURIComponent(searchQuery)}`);
-    } else {
-      router.push("/visuals");
-    }
-  };
 
   return (
     <div className="flex flex-col min-h-screen bg-brand-surface text-brand font-sans selection:bg-brand selection:text-white">
@@ -68,27 +59,9 @@ export default function Home() {
         </p>
 
         {/* Hero Search */}
-        <form onSubmit={handleSearch} className="relative w-full max-w-2xl mb-10 animate-fade-in-up shadow-2xl rounded-2xl group" style={{ animationDelay: '300ms' }}>
-          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-white/60 group-focus-within:text-white transition-colors" />
-          </div>
-          <input
-            type="text"
-            className="block w-full pl-12 pr-32 py-5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-sm md:text-base text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:bg-white/20 transition-all font-semibold shadow-inner"
-            placeholder="Search for Biology, Chemistry, O/L Mind Maps..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <div className="absolute inset-y-0 right-2 flex items-center">
-            <button
-              type="submit"
-              style={{ backgroundColor: "#ffffff", color: "#073238" }}
-              className="px-6 py-3 rounded-xl text-sm font-extrabold transition-all shadow-md active:scale-95"
-            >
-              Search
-            </button>
-          </div>
-        </form>
+        <div className="relative w-full max-w-2xl mb-10 animate-fade-in-up shadow-2xl rounded-2xl group z-20" style={{ animationDelay: '300ms' }}>
+          <SearchBar darkHero={true} placeholder="Search for Biology, Chemistry, O/L Mind Maps..." />
+        </div>
 
         <div className="relative flex flex-col sm:flex-row items-center gap-4 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
           <Link
