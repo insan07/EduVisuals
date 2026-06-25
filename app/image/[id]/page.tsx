@@ -21,6 +21,9 @@ import {
   ArrowLeft,
   BookOpen,
   FileImage,
+  MoreHorizontal,
+  Flag,
+  X,
 } from "lucide-react";
 
 interface PageProps {
@@ -42,6 +45,8 @@ export default function ImageDetailPage({ params }: PageProps) {
   const [copyStatus, setCopyStatus] = useState("Copy Link");
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [showUpsell, setShowUpsell] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const [relatedVisuals, setRelatedVisuals] = useState<any[]>([]);
 
@@ -238,9 +243,11 @@ export default function ImageDetailPage({ params }: PageProps) {
         ) : (
           <FileImage size={32} className="text-brand-faint opacity-50" />
         )}
-        <span className="absolute top-2 left-2 text-[8px] font-black px-1.5 py-0.5 rounded border border-brand-border bg-brand text-white shadow-sm">
-          {item.isPremium ? "Premium ⭐" : "Free"}
-        </span>
+        {item.isPremium && (
+          <span className="absolute top-2 left-2 text-[8px] font-black px-1.5 py-0.5 rounded border border-amber-500/20 bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-sm flex items-center gap-1">
+            <Crown size={10} /> Premium
+          </span>
+        )}
       </div>
       <div className="p-3 bg-white flex-1 flex flex-col justify-between">
         <h4 className="text-xs font-bold text-brand group-hover:text-brand transition-colors line-clamp-2 leading-snug">
@@ -255,11 +262,11 @@ export default function ImageDetailPage({ params }: PageProps) {
   );
 
   return (
-    <div className="flex flex-col min-h-screen bg-brand-surface text-brand pb-20 md:pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col">
+    <div className="flex flex-col min-h-screen bg-brand-surface text-brand pb-20 md:pb-12 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 md:pt-28 pb-6 flex-1 flex flex-col w-full min-w-0">
         
         {/* Breadcrumbs */}
-        <nav className="flex items-center gap-1.5 text-xs text-brand-faint mb-6">
+        <nav className="flex flex-wrap items-center gap-1.5 text-xs text-brand-faint mb-6 w-full">
           <Link href="/" className="hover:text-brand font-medium">Home</Link>
           <ChevronRight className="w-3.5 h-3.5 text-brand-faint" />
           <Link href={`/visuals?subject=${visual.subject}`} className="hover:text-brand font-medium">{visual.subject}</Link>
@@ -270,13 +277,13 @@ export default function ImageDetailPage({ params }: PageProps) {
         </nav>
 
         {/* Dynamic Two-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 mb-16 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 mb-8 md:mb-10 items-start">
           
           {/* ================= LEFT COLUMN: IMAGE PREVIEW (60%) ================= */}
-          <div className="lg:col-span-6 flex flex-col gap-4">
+          <div className="lg:col-span-6 flex flex-col gap-4 min-w-0">
             
             {/* Image Box */}
-            <div className="group relative w-full aspect-[4/3] md:h-[480px] bg-white rounded-2xl overflow-hidden flex items-center justify-center border border-brand-border shadow-sm select-none">
+            <div className="group relative w-full bg-[#f8f9fa] rounded-2xl overflow-hidden flex items-center justify-center border border-brand-border shadow-sm select-none p-0 md:p-4 h-[300px] sm:h-[400px] lg:h-[500px] xl:h-[600px]">
               
               {/* Overlay blocking drag and right click */}
               <div 
@@ -302,7 +309,7 @@ export default function ImageDetailPage({ params }: PageProps) {
                 <img 
                   src={visual.thumbnail_url || visual.file_url} 
                   alt={visual.title} 
-                  className="w-full h-full object-contain pointer-events-none" 
+                  className="w-full h-full object-contain pointer-events-none drop-shadow-md rounded-2xl md:rounded-none" 
                   onError={(e) => {
                     const target = e.currentTarget;
                     if (target.src !== visual.file_url && visual.file_url) {
@@ -318,6 +325,13 @@ export default function ImageDetailPage({ params }: PageProps) {
               <div className="absolute bottom-4 left-4 z-20 px-3 py-1 bg-[#f3f3f3]/90 text-brand/85 rounded text-[10px] border border-brand-border backdrop-blur-sm pointer-events-none select-none">
                 © EduVisuals.lk · Protected Content
               </div>
+
+              {/* Premium badge on image */}
+              {visual.is_premium && (
+                <div className="absolute top-4 left-4 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-md px-2.5 py-1.5 text-xs font-bold flex items-center gap-1 z-20 shadow-sm pointer-events-none select-none">
+                  <Crown size={14} /> Premium
+                </div>
+              )}
             </div>
 
             {/* Sub-preview utilities */}
@@ -339,186 +353,149 @@ export default function ImageDetailPage({ params }: PageProps) {
           </div>
 
           {/* ================= RIGHT COLUMN: INFO + PANEL (40%) ================= */}
-          <div className="lg:col-span-4 flex flex-col gap-6">
+          <div className="lg:col-span-4 flex flex-col gap-6 min-w-0">
             
             {/* Title & Metadata */}
             <div>
-              <h1 className="text-2xl md:text-3xl font-black text-brand leading-tight mb-3">
-                {visual.title}
-              </h1>
-
-              {/* Meta row badges */}
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-[#f3f3f3] text-brand rounded border border-brand-border">
-                  {visual.subject}
-                </span>
-                <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-[#f3f3f3] text-brand rounded border border-brand-border">
-                  {visual.grade}
-                </span>
-                <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-[#f3f3f3] text-brand rounded border border-brand-border">
-                  {visual.type}
-                </span>
-                {visual.is_premium && (
-                  <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-amber-100 text-amber-700 rounded border border-amber-200">
-                    Premium ⭐
-                  </span>
-                )}
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <h1 className="text-2xl md:text-3xl font-black text-brand leading-tight">
+                  {visual.title}
+                </h1>
+                
+                {/* 3-dots Dropdown Menu */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
+                    className="p-2 rounded-full hover:bg-brand-surface text-brand-faint hover:text-brand transition-colors"
+                  >
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
+                  
+                  {isDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-brand-border rounded-xl shadow-lg z-30 py-2 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                      <button 
+                        onClick={() => { handleCopyLink(); setIsDropdownOpen(false); }}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
+                      >
+                        <Copy className="w-3.5 h-3.5" /> Copy Link
+                      </button>
+                      <a 
+                        href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                          `Check out this educational visual aid: ${visual.title} - https://eduvisuals.lk/image/${visual.id}`
+                        )}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" /> Share on WhatsApp
+                      </a>
+                      <a 
+                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                          `https://eduvisuals.lk/image/${visual.id}`
+                        )}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
+                      >
+                        <Share2 className="w-3.5 h-3.5" /> Share on Facebook
+                      </a>
+                      <div className="h-px bg-brand-border my-1 w-full" />
+                      <button 
+                        onClick={() => { triggerToast("Report modal opened"); setIsDropdownOpen(false); }}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors w-full text-left"
+                      >
+                        <Flag className="w-3.5 h-3.5" /> Report Issue
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Meta row */}
+              <div className="flex items-center gap-2 text-xs font-semibold text-brand-faint mb-4 uppercase tracking-wide">
+                <span>{visual.subject}</span>
+                <span>•</span>
+                <span>{visual.grade}</span>
+                <span>•</span>
+                <span>{visual.type}</span>
               </div>
 
               {visual.description && (
-                <p className="text-xs text-brand-faint font-medium mb-4">
+                <p className="text-sm text-brand-faint font-medium mb-6 break-words whitespace-normal leading-relaxed">
                   {visual.description}
                 </p>
               )}
 
-              <div className="text-xs font-semibold text-brand-faint flex items-center gap-2">
-                <span>Downloads:</span>
-                <span className="text-brand font-black">{visual.download_count}</span>
-                <span className="ml-2">Views:</span>
-                <span className="text-brand font-black">{visual.view_count}</span>
-              </div>
-            </div>
+              <hr className="border-brand-border mb-6" />
 
-            <hr className="border-brand-border" />
-
-            {/* DOWNLOAD PANEL */}
-            <div className="w-full">
-              
-              {/* STATE A — USER NOT LOGGED IN */}
-              {userState === "guest" && (
-                <div className="border border-brand-border bg-white rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
-                  <div className="flex items-center gap-2.5 text-brand">
-                    <Lock className="w-5 h-5 text-brand" />
-                    <h3 className="font-extrabold text-sm text-brand">
-                      Sign in to download this visual
-                    </h3>
-                  </div>
-                  
-                  {/* Google Login Button */}
-                  <button 
-                    onClick={() => handleDownloadClick("google")}
-                    className="w-full bg-white border border-brand-border hover:bg-brand-surface text-brand font-black text-xs h-12 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-[0.5px]"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                    </svg>
-                    Continue with Google
-                  </button>
-
-                  <div className="text-center">
-                    <span className="text-[10px] text-brand font-medium">
-                      or{" "}
-                      <button onClick={() => handleDownloadClick("register")} className="text-brand hover:text-brand hover:underline font-black underline">
-                        create free account
-                      </button>
-                    </span>
-                  </div>
-
-                  <p className="text-[10px] text-brand-faint leading-normal text-center pt-2 border-t border-brand-border">
-                    Free downloads are watermarked. <br />
-                    <Link href="/pricing" className="text-brand font-bold hover:underline underline">Go Premium</Link> for clean HD formats.
-                  </p>
-                </div>
-              )}
-
-              {/* STATE B — FREE USER LOGGED IN */}
-              {userState === "free" && (
-                <div className="border border-brand-border bg-white rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
-                  <div>
-                    <button 
-                      onClick={() => handleDownloadClick("free-jpg")}
-                      className="w-full bg-brand hover:bg-brand text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-sm"
-                    >
-                      Download Free Version
-                    </button>
-                    <p className="text-[9px] text-brand-faint font-bold text-center mt-1.5 uppercase tracking-wide">
-                      Watermarked · 72dpi · JPG format
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="h-px bg-[rgba(0,57,60,0.08)] flex-1" />
-                    <span className="text-[10px] text-[rgba(0,57,60,0.5)] font-black uppercase">OR</span>
-                    <div className="h-px bg-[rgba(0,57,60,0.08)] flex-1" />
-                  </div>
-
-                  {/* Premium upsell box */}
-                  <div className="border border-brand-border bg-brand-surface rounded-xl p-4 shadow-sm flex flex-col gap-3">
+              {/* DOWNLOAD PANEL (MINIMAL) */}
+              <div className="w-full">
+                
+                {/* UPSELL STATE */}
+                {showUpsell ? (
+                  <div className="border border-amber-200 bg-amber-50 rounded-2xl p-6 flex flex-col gap-4 shadow-sm animate-in fade-in zoom-in duration-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-brand font-black text-xs flex items-center gap-1">
-                        <Crown className="w-4 h-4 text-brand" />
-                        Get Premium
+                      <span className="text-amber-800 font-black text-sm flex items-center gap-1.5">
+                        <Crown className="w-4 h-4 text-amber-600" />
+                        Premium Visual
                       </span>
-                      <span className="text-[10px] font-bold text-white bg-brand px-2.5 py-0.5 rounded shadow-sm">
-                        Rs. 499/month
-                      </span>
+                      <button onClick={() => setShowUpsell(false)} className="text-amber-500 hover:text-amber-700">
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
                     
-                    <ul className="text-[10px] text-brand font-semibold space-y-1 pl-1">
-                      <li className="flex items-center gap-1.5"><span className="text-emerald-600 font-extrabold">✓</span> No watermark</li>
-                      <li className="flex items-center gap-1.5"><span className="text-emerald-600 font-extrabold">✓</span> High-res HD PNG</li>
-                      <li className="flex items-center gap-1.5"><span className="text-emerald-600 font-extrabold">✓</span> Layered SVG Vector format</li>
-                    </ul>
+                    <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                      This visual is reserved for Premium members. Upgrade to get instant access to high-resolution, watermark-free downloads.
+                    </p>
 
-                    <Link 
-                      href="/pricing"
-                      className="w-full bg-brand hover:bg-brand text-white font-extrabold text-xs py-2.5 rounded-lg transition-colors shadow-sm mt-1 text-center"
+                    <div className="flex flex-col gap-2 mt-2">
+                      <Link 
+                        href="/pricing"
+                        className="w-full bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-sm text-center"
+                      >
+                        View Premium Plans
+                      </Link>
+                      {userState === "guest" && (
+                        <button 
+                          onClick={() => { setShowUpsell(false); useAuthModal.getState().open(); }}
+                          className="w-full bg-white border border-amber-200 text-amber-700 hover:bg-amber-100 font-extrabold text-xs py-3 rounded-xl transition-all"
+                        >
+                          Sign In
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  /* BUTTON STATE */
+                  visual.is_premium && userState !== "premium" ? (
+                    <button 
+                      onClick={() => setShowUpsell(true)}
+                      className="w-full bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold text-sm py-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5"
                     >
-                      Upgrade Now
-                    </Link>
+                      <Crown className="w-5 h-5" />
+                      Download Premium
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => handleDownloadClick()}
+                      className="w-full bg-brand hover:bg-brand/90 text-white font-extrabold text-sm py-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5"
+                    >
+                      <Download className="w-5 h-5" />
+                      Download Visual
+                    </button>
+                  )
+                )}
+                
+                {/* Stats */}
+                <div className="flex items-center justify-center gap-6 mt-6">
+                  <div className="text-xs font-semibold text-brand-faint flex items-center gap-1.5">
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="text-brand font-black">{visual.download_count}</span>
+                  </div>
+                  <div className="text-xs font-semibold text-brand-faint flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5" />
+                    <span className="text-brand font-black">{visual.view_count}</span>
                   </div>
                 </div>
-              )}
-
-              {/* STATE C — PREMIUM MEMBER LOGGED IN */}
-              {userState === "premium" && (
-                <div className="border border-brand-border bg-white rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-emerald-700 text-xs font-bold flex items-center gap-1.5">
-                      <CheckCircle className="w-4.5 h-4.5 text-emerald-500" />
-                      You have unlimited downloads
-                    </span>
-                    <span className="p-1.5 rounded-full bg-[#f3f3f3] text-brand border border-brand-border">
-                      <Crown className="w-4 h-4 text-brand" />
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col gap-2.5 mt-2">
-                    {/* PNG */}
-                    <button 
-                      onClick={() => handleDownloadClick("hd-png")}
-                      className="w-full bg-brand hover:bg-brand text-white font-black text-xs py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5"
-                    >
-                      <Download className="w-4 h-4" />
-                      Download HD PNG
-                    </button>
-
-                    {/* SVG */}
-                    <button 
-                      onClick={() => handleDownloadClick("svg")}
-                      className="w-full bg-white border border-brand-border hover:bg-[#f3f3f3] text-brand font-extrabold text-xs py-2.5 rounded-xl transition-all"
-                    >
-                      Download Vector SVG
-                    </button>
-
-                    {/* JPG */}
-                    <button 
-                      onClick={() => handleDownloadClick("jpg")}
-                      className="w-full bg-white border border-brand-border hover:bg-[#f3f3f3] text-brand font-extrabold text-xs py-2.5 rounded-xl transition-all"
-                    >
-                      Download High-Res JPG
-                    </button>
-                  </div>
-
-                  <div className="text-center text-[9px] text-brand-faint font-bold">
-                    File Size: ~4.8 MB · Clean No Watermark · Vector Included
-                  </div>
-                </div>
-              )}
-
+              </div>
             </div>
 
             <hr className="border-brand-border" />
@@ -541,69 +518,13 @@ export default function ImageDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            <hr className="border-brand-border" />
-
-            {/* Social Share bar & actions */}
-            <div className="flex flex-col gap-3">
-              <h3 className="font-extrabold text-xs uppercase tracking-wider text-brand">
-                Share Visual
-              </h3>
-              <div className="flex items-center gap-2">
-                
-                {/* Copy Link */}
-                <button
-                  onClick={handleCopyLink}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border border-brand-border hover:border-brand text-brand hover:text-brand text-xs font-bold rounded-xl transition-all"
-                >
-                  <Copy className="w-4 h-4 text-brand" />
-                  {copyStatus}
-                </button>
-
-                {/* WhatsApp */}
-                <a
-                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                    `Check out this educational visual aid: ${visual.title} - https://eduvisuals.lk/image/${visual.id}`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border border-brand-border hover:border-brand text-brand hover:text-brand text-xs font-bold rounded-xl transition-all"
-                >
-                  <MessageCircle className="w-4 h-4 text-brand" />
-                  WhatsApp
-                </a>
-
-                {/* Facebook */}
-                <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                    `https://eduvisuals.lk/image/${visual.id}`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2.5 bg-white border border-brand-border hover:border-brand text-brand rounded-xl transition-all"
-                  aria-label="Share on Facebook"
-                >
-                  <svg className="w-4.5 h-4.5 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                  </svg>
-                </a>
-
-              </div>
-              
-              <button 
-                onClick={() => triggerToast("Report modal opened")}
-                className="text-[10px] font-bold text-brand-faint hover:text-red-500 text-right mt-1"
-              >
-                Report an issue with this image
-              </button>
-            </div>
-
           </div>
         </div>
 
         {/* ================= BOTTOM RELATED SECTIONS ================= */}
-        <hr className="border-brand-border mb-12" />
+        <hr className="border-brand-border mb-6 md:mb-8" />
 
-        <div className="flex flex-col gap-16 mb-8">
+        <div className="flex flex-col gap-8 mb-4">
           
           {/* Section 1: Related Visuals */}
           {relatedVisuals.length > 0 && (

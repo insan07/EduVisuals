@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -8,18 +8,13 @@ import { useAuthModal } from "@/store/useAuthModal";
 import SearchBar from "@/components/SearchBar";
 import {
   Filter,
-  Grid,
-  List,
   ChevronDown,
-  ChevronUp,
   X,
   Download,
   Heart,
-  Maximize2,
   Crown,
   ArrowRight,
   FileImage,
-  Sparkles,
   Upload,
 } from "lucide-react";
 
@@ -29,11 +24,14 @@ interface Visual {
   id: string;
   title: string;
   description: string | null;
-  thumbnail_url: string | null;
+  thumbnail_url?: string | null;
+  thumbnailUrl?: string | null;
   file_url: string;
-  is_premium: boolean;
-  download_count: number;
-  view_count: number;
+  is_premium?: boolean;
+  isPremium?: boolean;
+  download_count?: number;
+  downloadCount?: number;
+  view_count?: number;
   subject: string;
   grade: string;
   type: string;
@@ -75,8 +73,8 @@ function SearchResultsContent() {
 
   /* ── URL-derived state ── */
   const q = searchParams.get("q") || "";
-  const contentType = searchParams.get("content") || "all"; // all | free | premium
-  const sortBy = searchParams.get("sort") || "latest"; // latest | downloaded
+  const contentType = searchParams.get("content") || "all"; 
+  const sortBy = searchParams.get("sort") || "latest"; 
   const activeGrades = searchParams.getAll("grade");
   const activeSubjects = searchParams.getAll("subject");
   const activeTypes = searchParams.getAll("type");
@@ -86,14 +84,10 @@ function SearchResultsContent() {
   /* ── Local UI state ── */
   const [visuals, setVisuals] = useState<Visual[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    grade: true, subject: true, type: false, syllabus: false, medium: false,
-  });
-  // Fake user role – in a real app pull from Supabase session
   const [userRole, setUserRole] = useState<string | null>(null);
+  
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   /* ── Fetch user role from session ── */
   useEffect(() => {
@@ -135,11 +129,6 @@ function SearchResultsContent() {
       ? current.filter((v) => v !== value)
       : [...current, value];
     updateParams({ [key]: next.length ? next : null });
-  };
-
-  /* ── Collapse section toggle ── */
-  const toggleSection = (key: string) => {
-    setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   /* ── Active filter count ── */
@@ -236,366 +225,330 @@ function SearchResultsContent() {
   /* ════════════════════════════ RENDER ════════════════════════════════ */
   return (
     <div style={{ background: "#f8f9fa", minHeight: "100vh" }}>
-      {/* ── Body: Sidebar + Results ── */}
-      <div className="mx-auto w-full max-w-[1280px] pt-20 md:pt-24 px-3 md:px-6 pb-8 flex flex-col md:flex-row items-start gap-4 md:gap-8">
+      <div className="mx-auto w-full max-w-[1440px] pt-20 md:pt-24 px-3 md:px-6 pb-8">
+        
+        {/* ── Search Bar and Tabs ── */}
+        <div className="bg-white p-3 md:p-5 rounded-2xl border border-[rgba(0,57,60,0.08)] mb-4 md:mb-5 flex flex-col gap-3 md:gap-4">
+          <SearchBar 
+            initialValue={q} 
+            onSubmit={handleSearchSubmit} 
+            className="w-full"
+          />
 
-        {/* ════════════ LEFT SIDEBAR (Desktop) ════════════ */}
-        <aside
-          className="visuals-sidebar"
-          style={{
-            width: 240, flexShrink: 0, background: "#ffffff",
-            borderRadius: "1rem", border: "1px solid rgba(0,57,60,0.08)",
-            padding: "1.25rem", position: "sticky", top: "5rem",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
-            <span style={{ fontWeight: 700, color: "#00393c", fontSize: "0.9rem" }}>Filters</span>
-            {activeFilterCount > 0 && (
+          {/* ── Content Type Tabs ── */}
+          <div style={{ display: "flex", gap: "0.5rem", width: "100%", justifyContent: "flex-start", flexWrap: "wrap" }}>
+            {(["all", "free", "premium"] as const).map((tab) => (
               <button
-                onClick={clearAllFilters}
+                key={tab}
+                onClick={() => updateParams({ content: tab === "all" ? null : tab })}
                 style={{
-                  background: "rgba(7,50,56,0.07)", border: "none", borderRadius: "0.5rem",
-                  padding: "0.25rem 0.6rem", fontSize: "0.75rem", color: "#073238",
-                  cursor: "pointer", fontWeight: 600,
+                  padding: "0.35rem 1rem", borderRadius: "2rem",
+                  border: contentType === tab ? "none" : "1px solid rgba(0,57,60,0.15)",
+                  background: contentType === tab ? "#073238" : "transparent",
+                  color: contentType === tab ? "#ffffff" : "#00393c",
+                  fontSize: "0.82rem", fontWeight: 600, cursor: "pointer",
+                  textTransform: "capitalize",
                 }}
               >
-                Clear ({activeFilterCount})
+                {tab === "premium" && <Crown size={12} style={{ display: "inline", marginRight: "0.3rem", verticalAlign: "middle" }} />}
+                {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
-            )}
+            ))}
           </div>
 
-          {/* Filter Section: Grade */}
-          <FilterSection
-            title="Grade"
-            options={GRADES}
-            active={activeGrades}
-            expanded={expandedSections.grade}
-            onToggle={() => toggleSection("grade")}
-            onSelect={(v) => toggleFilter("grade", v, activeGrades)}
-          />
+          {/* ── Filters and Sort Container ── */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2 pt-2 border-t border-gray-100">
+            
+            {/* Desktop Filter Pills */}
+            <div className="hidden md:flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-gray-500 mr-1 flex-shrink-0">Filters:</span>
+              
+              <FilterDropdown 
+                title="Grade" 
+                options={GRADES} 
+                active={activeGrades} 
+                isOpen={activeDropdown === "Grade"} 
+                onToggleDropdown={() => setActiveDropdown(activeDropdown === "Grade" ? null : "Grade")} 
+                onClose={() => setActiveDropdown(null)}
+                onToggleOption={(v) => toggleFilter("grade", v, activeGrades)} 
+              />
+              
+              <FilterDropdown 
+                title="Subject" 
+                options={SUBJECTS} 
+                active={activeSubjects} 
+                isOpen={activeDropdown === "Subject"} 
+                onToggleDropdown={() => setActiveDropdown(activeDropdown === "Subject" ? null : "Subject")} 
+                onClose={() => setActiveDropdown(null)}
+                onToggleOption={(v) => toggleFilter("subject", v, activeSubjects)} 
+              />
 
-          {/* Filter Section: Subject */}
-          <FilterSection
-            title="Subject"
-            options={SUBJECTS}
-            active={activeSubjects}
-            expanded={expandedSections.subject}
-            onToggle={() => toggleSection("subject")}
-            onSelect={(v) => toggleFilter("subject", v, activeSubjects)}
-          />
+              <FilterDropdown 
+                title="Type" 
+                options={TYPES} 
+                active={activeTypes} 
+                isOpen={activeDropdown === "Type"} 
+                onToggleDropdown={() => setActiveDropdown(activeDropdown === "Type" ? null : "Type")} 
+                onClose={() => setActiveDropdown(null)}
+                onToggleOption={(v) => toggleFilter("type", v, activeTypes)} 
+              />
 
-          {/* Filter Section: Type */}
-          <FilterSection
-            title="Type"
-            options={TYPES}
-            active={activeTypes}
-            expanded={expandedSections.type}
-            onToggle={() => toggleSection("type")}
-            onSelect={(v) => toggleFilter("type", v, activeTypes)}
-          />
+              <FilterDropdown 
+                title="Syllabus" 
+                options={SYLLABUSES} 
+                active={activeSyllabi} 
+                isOpen={activeDropdown === "Syllabus"} 
+                onToggleDropdown={() => setActiveDropdown(activeDropdown === "Syllabus" ? null : "Syllabus")} 
+                onClose={() => setActiveDropdown(null)}
+                onToggleOption={(v) => toggleFilter("syllabus", v, activeSyllabi)} 
+              />
 
-          {/* Filter Section: Syllabus */}
-          <FilterSection
-            title="Syllabus"
-            options={SYLLABUSES}
-            active={activeSyllabi}
-            expanded={expandedSections.syllabus}
-            onToggle={() => toggleSection("syllabus")}
-            onSelect={(v) => toggleFilter("syllabus", v, activeSyllabi)}
-          />
+              <FilterDropdown 
+                title="Medium" 
+                options={MEDIUMS} 
+                active={activeMediums} 
+                isOpen={activeDropdown === "Medium"} 
+                onToggleDropdown={() => setActiveDropdown(activeDropdown === "Medium" ? null : "Medium")} 
+                onClose={() => setActiveDropdown(null)}
+                onToggleOption={(v) => toggleFilter("medium", v, activeMediums)} 
+              />
 
-          {/* Filter Section: Medium */}
-          <FilterSection
-            title="Medium"
-            options={MEDIUMS}
-            active={activeMediums}
-            expanded={expandedSections.medium}
-            onToggle={() => toggleSection("medium")}
-            onSelect={(v) => toggleFilter("medium", v, activeMediums)}
-          />
-        </aside>
-
-        {/* ════════════ MAIN RESULTS AREA ════════════ */}
-        <main style={{ flex: 1, minWidth: 0 }}>
-
-          {/* ── Search Bar and Tabs ── */}
-          <div className="bg-white p-3 md:p-5 rounded-2xl border border-[rgba(0,57,60,0.08)] mb-4 md:mb-5 flex flex-col gap-3 md:gap-4">
-            <SearchBar 
-              initialValue={q} 
-              onSubmit={handleSearchSubmit} 
-              className="w-full"
-            />
-
-            {/* ── Content Type Tabs ── */}
-            <div style={{ display: "flex", gap: "0.5rem", width: "100%", justifyContent: "flex-start", flexWrap: "wrap" }}>
-              {(["all", "free", "premium"] as const).map((tab) => (
+              {activeFilterCount > 0 && (
                 <button
-                  key={tab}
-                  onClick={() => updateParams({ content: tab === "all" ? null : tab })}
-                  style={{
-                    padding: "0.35rem 1rem", borderRadius: "2rem",
-                    border: contentType === tab ? "none" : "1px solid rgba(0,57,60,0.15)",
-                    background: contentType === tab ? "#073238" : "transparent",
-                    color: contentType === tab ? "#ffffff" : "#00393c",
-                    fontSize: "0.82rem", fontWeight: 600, cursor: "pointer",
-                    textTransform: "capitalize",
-                  }}
+                  onClick={clearAllFilters}
+                  className="ml-1 flex items-center gap-1 text-xs font-semibold text-red-500 hover:bg-red-50 px-3 py-2 rounded-full transition-colors flex-shrink-0"
                 >
-                  {tab === "premium" && <Crown size={12} style={{ display: "inline", marginRight: "0.3rem", verticalAlign: "middle" }} />}
-                  {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  <X size={14} /> Clear ({activeFilterCount})
                 </button>
-              ))}
+              )}
             </div>
-          </div>
 
-          {/* ── Admin / Teacher Upload Banner ── */}
-          {(userRole === "admin" || userRole === "team_creator") && (
-            <div
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                background: "linear-gradient(90deg, #073238, #0a4a52)",
-                borderRadius: "0.75rem", padding: "0.85rem 1.25rem",
-                marginBottom: "1.25rem", gap: "1rem",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                <Upload size={16} style={{ color: "#4dd9e0" }} />
-                <span style={{ color: "#ffffff", fontSize: "0.875rem", fontWeight: 500 }}>
-                  You can upload educational visuals to this library.
-                </span>
+            {/* Mobile Main Filter Button */}
+            <div className="md:hidden w-full relative">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setActiveDropdown(activeDropdown === "MobileFilters" ? null : "MobileFilters")}
+                  className={cn(
+                    "flex-1 flex items-center justify-between px-4 py-2.5 rounded-xl border font-semibold shadow-sm transition-colors",
+                    activeDropdown === "MobileFilters" || activeFilterCount > 0 ? "border-[#073238] bg-[#073238]/5 text-[#073238]" : "border-gray-200 bg-white text-gray-700"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <Filter size={16} />
+                    <span>Filters</span>
+                    {activeFilterCount > 0 && (
+                      <span className="bg-[#073238] text-white text-xs px-2 py-0.5 rounded-full min-w-[24px] text-center">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </div>
+                  <ChevronDown size={16} className={cn("transition-transform", activeDropdown === "MobileFilters" && "rotate-180")} />
+                </button>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="flex-shrink-0 px-3 flex items-center justify-center rounded-xl bg-red-50 text-red-500 font-bold border border-red-100"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
               </div>
-              <Link
-                href="/upload"
-                style={{
-                  display: "flex", alignItems: "center", gap: "0.35rem",
-                  background: "#4dd9e0", color: "#073238", textDecoration: "none",
-                  padding: "0.4rem 1rem", borderRadius: "0.5rem",
-                  fontSize: "0.8rem", fontWeight: 700, whiteSpace: "nowrap",
-                }}
-              >
-                Upload Portal <ArrowRight size={13} />
-              </Link>
+
+              {activeDropdown === "MobileFilters" && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 flex flex-col gap-5 max-h-[60vh] overflow-y-auto">
+                  
+                  {/* Grade */}
+                  <div>
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Grade</div>
+                    <div className="flex flex-wrap gap-2">
+                      {GRADES.map(opt => (
+                        <button key={opt} onClick={() => toggleFilter("grade", opt, activeGrades)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", activeGrades.includes(opt) ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>{opt}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Subject */}
+                  <div>
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Subject</div>
+                    <div className="flex flex-wrap gap-2">
+                      {SUBJECTS.map(opt => (
+                        <button key={opt} onClick={() => toggleFilter("subject", opt, activeSubjects)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", activeSubjects.includes(opt) ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>{opt}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Type */}
+                  <div>
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Type</div>
+                    <div className="flex flex-wrap gap-2">
+                      {TYPES.map(opt => (
+                        <button key={opt} onClick={() => toggleFilter("type", opt, activeTypes)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", activeTypes.includes(opt) ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>{opt}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Syllabus */}
+                  <div>
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Syllabus</div>
+                    <div className="flex flex-wrap gap-2">
+                      {SYLLABUSES.map(opt => (
+                        <button key={opt} onClick={() => toggleFilter("syllabus", opt, activeSyllabi)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", activeSyllabi.includes(opt) ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>{opt}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Medium */}
+                  <div>
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Medium</div>
+                    <div className="flex flex-wrap gap-2">
+                      {MEDIUMS.map(opt => (
+                        <button key={opt} onClick={() => toggleFilter("medium", opt, activeMediums)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", activeMediums.includes(opt) ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>{opt}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              )}
             </div>
-          )}
-
-          {/* ── Top Bar: Results count + Sort + View toggle + Mobile filter ── */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
-            {/* Mobile filter button */}
-            <button
-              className="mobile-filter-btn"
-              onClick={() => setMobileFiltersOpen(true)}
-              style={{
-                display: "none", alignItems: "center", gap: "0.5rem",
-                background: "#ffffff", border: "1px solid rgba(0,57,60,0.15)",
-                borderRadius: "0.6rem", padding: "0.5rem 0.9rem",
-                fontSize: "0.85rem", color: "#00393c", cursor: "pointer", fontWeight: 600,
-              }}
-            >
-              <Filter size={15} />
-              Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
-            </button>
-
-            <span style={{ color: "#00393c", fontSize: "0.9rem", fontWeight: 500, marginRight: "auto" }}>
-              {isLoading ? "Loading…" : `${visuals.length} visual${visuals.length !== 1 ? "s" : ""} found`}
-            </span>
 
             {/* Sort dropdown */}
-            <div style={{ position: "relative" }}>
+            <div className="relative flex-shrink-0 w-full md:w-auto mt-1 md:mt-0">
               <select
                 value={sortBy}
                 onChange={(e) => updateParams({ sort: e.target.value === "latest" ? null : e.target.value })}
-                style={{
-                  appearance: "none", background: "#ffffff",
-                  border: "1px solid rgba(0,57,60,0.15)", borderRadius: "0.6rem",
-                  padding: "0.45rem 2rem 0.45rem 0.85rem", fontSize: "0.85rem",
-                  color: "#00393c", cursor: "pointer", fontWeight: 500, outline: "none",
-                }}
+                className="w-full md:w-auto appearance-none bg-white border border-[rgba(0,57,60,0.15)] rounded-full py-2 pl-3 pr-8 text-sm text-[#00393c] cursor-pointer font-medium outline-none"
               >
                 <option value="latest">Latest</option>
                 <option value="downloaded">Most Downloaded</option>
               </select>
               <ChevronDown
                 size={14}
-                style={{ position: "absolute", right: "0.6rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#073238" }}
+                style={{ position: "absolute", right: "0.8rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#073238" }}
               />
             </div>
-
-            {/* Grid / List toggle */}
-            <div style={{ display: "flex", background: "#ffffff", border: "1px solid rgba(0,57,60,0.15)", borderRadius: "0.6rem", overflow: "hidden" }}>
-              <button
-                onClick={() => setViewMode("grid")}
-                style={{
-                  padding: "0.45rem 0.65rem", border: "none", cursor: "pointer",
-                  background: viewMode === "grid" ? "#073238" : "transparent",
-                  color: viewMode === "grid" ? "#ffffff" : "#00393c",
-                }}
-              >
-                <Grid size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode("list")}
-                style={{
-                  padding: "0.45rem 0.65rem", border: "none", cursor: "pointer",
-                  background: viewMode === "list" ? "#073238" : "transparent",
-                  color: viewMode === "list" ? "#ffffff" : "#00393c",
-                }}
-              >
-                <List size={16} />
-              </button>
-            </div>
           </div>
+        </div>
 
-          {/* ── Active Filter Chips ── */}
-          {activeFilterCount > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginBottom: "1rem" }}>
-              {activeGrades.map((g) => (
-                <FilterChip key={`grade-${g}`} label={g} onRemove={() => toggleFilter("grade", g, activeGrades)} />
-              ))}
-              {activeSubjects.map((s) => (
-                <FilterChip key={`subject-${s}`} label={s} onRemove={() => toggleFilter("subject", s, activeSubjects)} />
-              ))}
-              {activeTypes.map((t) => (
-                <FilterChip key={`type-${t}`} label={t} onRemove={() => toggleFilter("type", t, activeTypes)} />
-              ))}
-              {activeSyllabi.map((s) => (
-                <FilterChip key={`syllabus-${s}`} label={s} onRemove={() => toggleFilter("syllabus", s, activeSyllabi)} />
-              ))}
-              {activeMediums.map((m) => (
-                <FilterChip key={`medium-${m}`} label={m} onRemove={() => toggleFilter("medium", m, activeMediums)} />
-              ))}
+        {/* ── Admin / Teacher Upload Banner ── */}
+        {(userRole === "admin" || userRole === "team_creator") && (
+          <div
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              background: "linear-gradient(90deg, #073238, #0a4a52)",
+              borderRadius: "0.75rem", padding: "0.85rem 1.25rem",
+              marginBottom: "1.25rem", gap: "1rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              <Upload size={16} style={{ color: "#4dd9e0" }} />
+              <span style={{ color: "#ffffff", fontSize: "0.875rem", fontWeight: 500 }}>
+                You can upload educational visuals to this library.
+              </span>
             </div>
-          )}
-
-          {/* ── Loading Skeleton ── */}
-          {isLoading && (
-            <div
-              className={
-                viewMode === "grid"
-                  ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4"
-                  : "flex flex-col gap-3 md:gap-4"
-              }
+            <Link
+              href="/upload"
+              style={{
+                display: "flex", alignItems: "center", gap: "0.35rem",
+                background: "#4dd9e0", color: "#073238", textDecoration: "none",
+                padding: "0.4rem 1rem", borderRadius: "0.5rem",
+                fontSize: "0.8rem", fontWeight: 700, whiteSpace: "nowrap",
+              }}
             >
-              {Array.from({ length: 8 }).map((_, i) => (
-                <SkeletonCard key={i} listMode={viewMode === "list"} />
-              ))}
-            </div>
-          )}
+              Upload Portal <ArrowRight size={13} />
+            </Link>
+          </div>
+        )}
 
-          {/* ── Empty State ── */}
-          {!isLoading && visuals.length === 0 && (
-            <EmptyState
-              hasFilters={activeFilterCount > 0 || !!q}
-              onClearFilters={clearAllFilters}
-              userRole={userRole}
-            />
-          )}
+        {/* ── Top Bar: Results count ── */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
+          <span style={{ color: "#00393c", fontSize: "0.9rem", fontWeight: 500, marginRight: "auto" }}>
+            {isLoading ? "Loading…" : `${visuals.length} visual${visuals.length !== 1 ? "s" : ""} found`}
+          </span>
+        </div>
 
-          {/* ── Visuals Grid / List ── */}
-          {!isLoading && visuals.length > 0 && (
-            <>
-              <div
-                className={
-                  viewMode === "grid"
-                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4"
-                    : "flex flex-col gap-3 md:gap-4"
-                }
-              >
-                {visuals.map((visual) => (
+        {/* ── Active Filter Chips ── */}
+        {activeFilterCount > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginBottom: "1rem" }}>
+            {activeGrades.map((g) => (
+              <FilterChip key={`grade-${g}`} label={g} onRemove={() => toggleFilter("grade", g, activeGrades)} />
+            ))}
+            {activeSubjects.map((s) => (
+              <FilterChip key={`subject-${s}`} label={s} onRemove={() => toggleFilter("subject", s, activeSubjects)} />
+            ))}
+            {activeTypes.map((t) => (
+              <FilterChip key={`type-${t}`} label={t} onRemove={() => toggleFilter("type", t, activeTypes)} />
+            ))}
+            {activeSyllabi.map((s) => (
+              <FilterChip key={`syllabus-${s}`} label={s} onRemove={() => toggleFilter("syllabus", s, activeSyllabi)} />
+            ))}
+            {activeMediums.map((m) => (
+              <FilterChip key={`medium-${m}`} label={m} onRemove={() => toggleFilter("medium", m, activeMediums)} />
+            ))}
+          </div>
+        )}
+
+        {/* ── Loading Skeleton ── */}
+        {isLoading && (
+          <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-4 space-y-3 md:space-y-4">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} style={{ breakInside: "avoid" }}>
+                <SkeletonCard />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Empty State ── */}
+        {!isLoading && visuals.length === 0 && (
+          <EmptyState
+            hasFilters={activeFilterCount > 0 || !!q}
+            onClearFilters={clearAllFilters}
+            userRole={userRole}
+          />
+        )}
+
+        {/* ── Visuals Grid ── */}
+        {!isLoading && visuals.length > 0 && (
+          <>
+            <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-4 space-y-3 md:space-y-4">
+              {visuals.map((visual) => (
+                <div key={visual.id} style={{ breakInside: "avoid" }}>
                   <VisualCard
-                    key={visual.id}
                     visual={visual}
-                    listMode={viewMode === "list"}
                     isSaved={savedIds.has(visual.id)}
                     onSave={() => toggleSave(visual.id)}
                     onDownload={() => handleDownload(visual)}
                   />
-                ))}
-              </div>
-
-              {/* Load More placeholder — future pagination */}
-              {visuals.length >= 50 && (
-                <div style={{ textAlign: "center", marginTop: "2rem" }}>
-                  <button
-                    style={{
-                      background: "#073238", color: "#ffffff", border: "none",
-                      borderRadius: "0.75rem", padding: "0.75rem 2rem",
-                      fontSize: "0.9rem", fontWeight: 600, cursor: "pointer",
-                    }}
-                  >
-                    Load More
-                  </button>
                 </div>
-              )}
-            </>
-          )}
-        </main>
-      </div>
-
-      {/* ════════════ MOBILE FILTER DRAWER ════════════ */}
-      {mobileFiltersOpen && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 50,
-            background: "rgba(0,0,0,0.5)", display: "flex",
-          }}
-          onClick={() => setMobileFiltersOpen(false)}
-        >
-          <div
-            style={{
-              width: 300, background: "#ffffff", height: "100%",
-              overflowY: "auto", padding: "1.5rem",
-              boxShadow: "4px 0 24px rgba(0,0,0,0.15)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
-              <span style={{ fontWeight: 700, color: "#00393c", fontSize: "1rem" }}>Filters</span>
-              <button
-                onClick={() => setMobileFiltersOpen(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#073238" }}
-              >
-                <X size={20} />
-              </button>
+              ))}
             </div>
 
-            {activeFilterCount > 0 && (
-              <button
-                onClick={() => { clearAllFilters(); setMobileFiltersOpen(false); }}
-                style={{
-                  width: "100%", background: "rgba(7,50,56,0.07)", border: "none",
-                  borderRadius: "0.5rem", padding: "0.5rem", fontSize: "0.85rem",
-                  color: "#073238", cursor: "pointer", fontWeight: 600, marginBottom: "1rem",
-                }}
-              >
-                Clear All Filters ({activeFilterCount})
-              </button>
+            {/* Load More placeholder — future pagination */}
+            {visuals.length >= 50 && (
+              <div style={{ textAlign: "center", marginTop: "2rem" }}>
+                <button
+                  style={{
+                    background: "#073238", color: "#ffffff", border: "none",
+                    borderRadius: "0.75rem", padding: "0.75rem 2rem",
+                    fontSize: "0.9rem", fontWeight: 600, cursor: "pointer",
+                  }}
+                >
+                  Load More
+                </button>
+              </div>
             )}
+          </>
+        )}
+      </div>
 
-            <FilterSection title="Grade" options={GRADES} active={activeGrades} expanded={expandedSections.grade} onToggle={() => toggleSection("grade")} onSelect={(v) => toggleFilter("grade", v, activeGrades)} />
-            <FilterSection title="Subject" options={SUBJECTS} active={activeSubjects} expanded={expandedSections.subject} onToggle={() => toggleSection("subject")} onSelect={(v) => toggleFilter("subject", v, activeSubjects)} />
-            <FilterSection title="Type" options={TYPES} active={activeTypes} expanded={expandedSections.type} onToggle={() => toggleSection("type")} onSelect={(v) => toggleFilter("type", v, activeTypes)} />
-            <FilterSection title="Syllabus" options={SYLLABUSES} active={activeSyllabi} expanded={expandedSections.syllabus} onToggle={() => toggleSection("syllabus")} onSelect={(v) => toggleFilter("syllabus", v, activeSyllabi)} />
-            <FilterSection title="Medium" options={MEDIUMS} active={activeMediums} expanded={expandedSections.medium} onToggle={() => toggleSection("medium")} onSelect={(v) => toggleFilter("medium", v, activeMediums)} />
-
-            <button
-              onClick={() => setMobileFiltersOpen(false)}
-              style={{
-                width: "100%", background: "#073238", color: "#ffffff",
-                border: "none", borderRadius: "0.75rem", padding: "0.75rem",
-                fontSize: "0.9rem", fontWeight: 700, cursor: "pointer", marginTop: "1rem",
-              }}
-            >
-              View Results
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Responsive styles injected ── */}
       <style>{`
-        @media (max-width: 768px) {
-          .visuals-sidebar { display: none !important; }
-          .mobile-filter-btn { display: flex !important; }
+        /* Hide scrollbar for filter pills row */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
       `}</style>
     </div>
@@ -606,59 +559,72 @@ function SearchResultsContent() {
    SUB-COMPONENTS
 ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── FilterSection ── */
-function FilterSection({
-  title, options, active, expanded, onToggle, onSelect,
+/* ── FilterDropdown ── */
+function FilterDropdown({
+  title,
+  options,
+  active,
+  isOpen,
+  onToggleDropdown,
+  onClose,
+  onToggleOption,
 }: {
   title: string;
   options: string[];
   active: string[];
-  expanded: boolean;
-  onToggle: () => void;
-  onSelect: (v: string) => void;
+  isOpen: boolean;
+  onToggleDropdown: () => void;
+  onClose: () => void;
+  onToggleOption: (v: string) => void;
 }) {
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (isOpen && dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onClose]);
+
   return (
-    <div style={{ marginBottom: "0.25rem", borderBottom: "1px solid rgba(0,57,60,0.08)", paddingBottom: "0.75rem", marginTop: "0.75rem" }}>
+    <div className="relative flex-shrink-0" ref={dropdownRef}>
       <button
-        onClick={onToggle}
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          width: "100%", background: "none", border: "none", cursor: "pointer",
-          padding: "0", marginBottom: expanded ? "0.65rem" : "0",
-        }}
+        onClick={onToggleDropdown}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-colors whitespace-nowrap",
+          active.length > 0 || isOpen
+            ? "border-[#073238] bg-[#073238]/5 text-[#073238]"
+            : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+        )}
       >
-        <span style={{ fontWeight: 600, color: "#00393c", fontSize: "0.82rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          {title}
-          {active.length > 0 && (
-            <span style={{ marginLeft: "0.4rem", background: "#073238", color: "#fff", borderRadius: "2rem", padding: "0.05rem 0.45rem", fontSize: "0.7rem" }}>
-              {active.length}
-            </span>
-          )}
-        </span>
-        {expanded ? <ChevronUp size={14} style={{ color: "#073238" }} /> : <ChevronDown size={14} style={{ color: "#073238" }} />}
+        {title}
+        {active.length > 0 && (
+          <span className="bg-[#073238] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+            {active.length}
+          </span>
+        )}
+        <ChevronDown size={14} className={cn("transition-transform", isOpen && "rotate-180")} />
       </button>
 
-      {expanded && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 p-3 w-56 z-50 flex flex-col gap-2 max-h-64 overflow-y-auto">
           {options.map((opt) => {
             const isActive = active.includes(opt);
             return (
               <label
                 key={opt}
-                style={{
-                  display: "flex", alignItems: "center", gap: "0.6rem",
-                  cursor: "pointer", padding: "0.25rem 0.3rem",
-                  borderRadius: "0.4rem",
-                  background: isActive ? "rgba(7,50,56,0.06)" : "transparent",
-                }}
+                className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <input
                   type="checkbox"
                   checked={isActive}
-                  onChange={() => onSelect(opt)}
-                  style={{ accentColor: "#073238", width: 14, height: 14 }}
+                  onChange={() => onToggleOption(opt)}
+                  style={{ accentColor: "#073238", width: 16, height: 16 }}
                 />
-                <span style={{ fontSize: "0.85rem", color: isActive ? "#073238" : "#374151", fontWeight: isActive ? 600 : 400 }}>
+                <span className={cn("text-sm", isActive ? "font-semibold text-[#073238]" : "text-gray-700")}>
                   {opt}
                 </span>
               </label>
@@ -690,171 +656,95 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 
 /* ── VisualCard ── */
 function VisualCard({
-  visual, listMode, isSaved, onSave, onDownload,
+  visual, isSaved, onSave, onDownload,
 }: {
   visual: Visual;
-  listMode: boolean;
   isSaved: boolean;
   onSave: () => void;
   onDownload: () => void;
 }) {
-  const [imgSrc, setImgSrc] = useState(visual.thumbnail_url || visual.file_url);
+  const [imgSrc, setImgSrc] = useState(visual.thumbnailUrl || visual.thumbnail_url || visual.file_url);
+  const isPremiumVisual = visual.isPremium ?? visual.is_premium ?? false;
 
   return (
     <Link
       href={`/image/${visual.id}`}
+      className="group block relative w-full rounded-2xl overflow-hidden cursor-pointer"
       style={{
-        background: "#ffffff",
-        border: "1px solid rgba(0,57,60,0.08)",
-        borderRadius: "1rem",
-        overflow: "hidden",
-        display: listMode ? "flex" : "block",
-        alignItems: listMode ? "stretch" : undefined,
-        transition: "box-shadow 0.2s, transform 0.2s",
-        cursor: "pointer",
-        textDecoration: "none",
-        color: "inherit"
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.boxShadow = "0 8px 32px rgba(7,50,56,0.12)";
-        (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-2px)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.boxShadow = "none";
-        (e.currentTarget as HTMLAnchorElement).style.transform = "none";
+        background: "linear-gradient(135deg, #e8f5f6, #d0ecee)",
       }}
     >
-      {/* ── Thumbnail ── */}
-      <div
-        style={{
-          position: "relative",
-          flexShrink: 0,
-          width: listMode ? 160 : "100%",
-          aspectRatio: listMode ? "4/3" : "4/3",
-          background: "linear-gradient(135deg, #e8f5f6, #d0ecee)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          overflow: "hidden",
-        }}
-      >
-        {imgSrc ? (
-          <img
-            src={imgSrc}
-            alt={visual.title}
-            onError={() => {
-              if (imgSrc === visual.thumbnail_url && visual.file_url && visual.file_url !== visual.thumbnail_url) {
-                setImgSrc(visual.file_url);
-              } else {
-                setImgSrc("");
-              }
-            }}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        ) : (
-          <FileImage size={40} style={{ color: "rgba(7,50,56,0.25)" }} />
-        )}
-
-        {/* Premium badge */}
-        {visual.is_premium && (
-          <div
-            style={{
-              position: "absolute", top: "0.5rem", left: "0.5rem",
-              background: "linear-gradient(135deg, #f59e0b, #d97706)",
-              color: "#fff", borderRadius: "0.4rem",
-              padding: "0.2rem 0.5rem", fontSize: "0.7rem", fontWeight: 700,
-              display: "flex", alignItems: "center", gap: "0.25rem",
-            }}
-          >
-            <Crown size={10} /> Premium
-          </div>
-        )}
-
-        {/* Maximize overlay on hover */}
-        <div
-          className="card-overlay"
-          style={{
-            position: "absolute", inset: 0, background: "rgba(7,50,56,0.4)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            opacity: 0, transition: "opacity 0.2s",
+      {/* ── Image ── */}
+      {imgSrc ? (
+        <img
+          src={imgSrc}
+          alt={visual.title}
+          onError={() => {
+            const fallbackSrc = visual.thumbnailUrl || visual.thumbnail_url;
+            if (imgSrc === fallbackSrc && visual.file_url && visual.file_url !== fallbackSrc) {
+              setImgSrc(visual.file_url);
+            } else {
+              setImgSrc("");
+            }
           }}
-        >
-          <Maximize2 size={24} style={{ color: "#ffffff" }} />
+          className="w-full h-auto max-h-[300px] sm:max-h-[400px] md:max-h-[500px] block object-cover object-top"
+        />
+      ) : (
+        <div className="w-full aspect-video flex items-center justify-center">
+          <FileImage size={40} style={{ color: "rgba(7,50,56,0.25)" }} />
         </div>
+      )}
 
-        <style>{`
-          div:hover > .card-overlay { opacity: 1 !important; }
-        `}</style>
-      </div>
-
-      {/* ── Card Body ── */}
-      <div style={{ padding: "0.85rem", flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "0.4rem", marginBottom: "0.4rem" }}>
-          <h3
-            style={{
-              fontSize: "0.875rem", fontWeight: 700, color: "#00393c",
-              margin: 0, flex: 1, lineHeight: 1.35,
-              overflow: "hidden", textOverflow: "ellipsis",
-              display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const,
-            }}
-          >
-            {visual.title}
-          </h3>
+      {/* ── Premium badge (Always visible) ── */}
+      {isPremiumVisual && (
+        <div className="absolute top-3 left-3 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-md px-2 py-1 text-xs font-bold flex items-center gap-1 z-10 shadow-sm">
+          <Crown size={12} /> Premium
         </div>
+      )}
 
-        {/* Tags row */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", marginBottom: "0.65rem" }}>
-          {visual.subject && (
-            <span style={{ background: "rgba(7,50,56,0.07)", color: "#073238", borderRadius: "0.3rem", padding: "0.15rem 0.45rem", fontSize: "0.72rem", fontWeight: 600 }}>
-              {visual.subject}
-            </span>
-          )}
-          {visual.grade && (
-            <span style={{ background: "rgba(77,217,224,0.15)", color: "#0a5a64", borderRadius: "0.3rem", padding: "0.15rem 0.45rem", fontSize: "0.72rem", fontWeight: 600 }}>
-              {visual.grade}
-            </span>
-          )}
-          {visual.type && (
-            <span style={{ background: "rgba(99,102,241,0.08)", color: "#4338ca", borderRadius: "0.3rem", padding: "0.15rem 0.45rem", fontSize: "0.72rem", fontWeight: 500 }}>
-              {visual.type}
-            </span>
-          )}
-        </div>
+      {/* ── Overlay (Hover only, hidden on mobile) ── */}
+      <div className="card-overlay absolute inset-0 z-0 pointer-events-none opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 hidden md:flex flex-col justify-between bg-black/40">
 
-        {/* Bottom actions row */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.78rem", color: "#6b7280" }}>
-            <Download size={12} />
-            {Number(visual?.download_count || 0).toLocaleString()}
-          </span>
-
-          <div style={{ display: "flex", gap: "0.4rem" }}>
-            {/* Save / Heart */}
+        <div className="relative z-10 flex justify-end p-3 pointer-events-auto">
+          {/* Top right actions */}
+          <div className="flex gap-2">
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSave(); }}
-              style={{
-                background: isSaved ? "rgba(239,68,68,0.1)" : "rgba(0,57,60,0.05)",
-                border: "none", borderRadius: "0.5rem",
-                padding: "0.35rem", cursor: "pointer",
-                color: isSaved ? "#ef4444" : "#6b7280",
-                display: "flex", alignItems: "center",
-              }}
+              className="bg-white/90 hover:bg-white text-gray-700 p-2 rounded-lg backdrop-blur-sm transition-colors shadow-sm"
             >
-              <Heart size={14} fill={isSaved ? "#ef4444" : "none"} />
+              <Heart size={16} fill={isSaved ? "#ef4444" : "none"} stroke={isSaved ? "#ef4444" : "currentColor"} />
             </button>
-
-            {/* Download */}
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDownload(); }}
-              style={{
-                background: "#073238", color: "#ffffff",
-                border: "none", borderRadius: "0.5rem",
-                padding: "0.35rem 0.65rem", cursor: "pointer",
-                fontSize: "0.75rem", fontWeight: 600,
-                display: "flex", alignItems: "center", gap: "0.3rem",
-              }}
+              className="bg-white/90 hover:bg-white text-gray-700 p-2 rounded-lg backdrop-blur-sm transition-colors shadow-sm flex items-center justify-center"
             >
-              <Download size={12} />
-              {visual.is_premium ? "Unlock" : "Get"}
+              <Download size={16} />
             </button>
+          </div>
+        </div>
+
+        <div className="relative z-10 p-4 pointer-events-auto mt-auto">
+          {/* Bottom left content */}
+          <h3 className="text-white font-medium text-sm sm:text-base line-clamp-2 mb-2 leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+            {visual.title}
+          </h3>
+          {/* Tags row */}
+          <div className="flex flex-wrap gap-2">
+            {visual.subject && (
+              <span className="bg-black/30 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded text-[10px] sm:text-xs font-medium">
+                {visual.subject}
+              </span>
+            )}
+            {visual.grade && (
+              <span className="bg-black/30 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded text-[10px] sm:text-xs font-medium">
+                {visual.grade}
+              </span>
+            )}
+            {visual.type && (
+              <span className="bg-black/30 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded text-[10px] sm:text-xs font-medium">
+                {visual.type}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -863,18 +753,18 @@ function VisualCard({
 }
 
 /* ── SkeletonCard ── */
-function SkeletonCard({ listMode }: { listMode: boolean }) {
+function SkeletonCard() {
   return (
     <div
       style={{
         background: "#ffffff", border: "1px solid rgba(0,57,60,0.08)",
         borderRadius: "1rem", overflow: "hidden",
-        display: listMode ? "flex" : "block",
+        display: "block",
       }}
     >
       <div
         style={{
-          width: listMode ? 160 : "100%", aspectRatio: "4/3",
+          width: "100%", aspectRatio: "4/3",
           background: "linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%)",
           backgroundSize: "200% 100%",
           animation: "shimmer 1.4s infinite",
