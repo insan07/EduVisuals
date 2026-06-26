@@ -229,13 +229,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Remove internal fields
-    images = images.map(img => {
+    const finalImages = images.map((img: any) => {
       const { searchScore, ...rest } = img;
       return rest;
     });
 
     return NextResponse.json({
-      images,
+      images: finalImages,
       total: totalCount,
       page,
       hasMore: offset + pageSize < totalCount,
