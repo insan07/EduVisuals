@@ -22,6 +22,7 @@ import {
   Sparkles,
   FileText,
   User as UserIcon,
+  FileImage,
 } from "lucide-react";
 import { useAuthModal } from "@/store/useAuthModal";
 import { formatLKR, formatDate, cn } from "@/lib/utils";
@@ -35,10 +36,9 @@ export default function UserDashboard() {
   
   // Tab inner states
   const [downloadPeriod, setDownloadPeriod] = useState<"all" | "week" | "month">("all");
-  const [collections, setCollections] = useState([
-    { id: "col1", name: "Science Mind Maps", items: ["1", "8"], emojiList: ["🌿", "🫁"] },
-    { id: "col2", name: "History Timelines", items: ["3", "10"], emojiList: ["🏰", "⏳"] },
-  ]);
+  const [collections, setCollections] = useState<any[]>([]);
+  const [collectionItems, setCollectionItems] = useState<any[]>([]);
+  const [isLoadingCollections, setIsLoadingCollections] = useState(false);
   const [newColName, setNewColName] = useState("");
   const [showColModal, setShowColModal] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
@@ -77,6 +77,18 @@ export default function UserDashboard() {
           setTodayCount(data.last_download_date === today ? (data.downloads_today || 0) : 0);
         }
       });
+      
+    // Load collections
+    setIsLoadingCollections(true);
+    supabase
+      .from("saved_collections")
+      .select("*, saved_items(count)")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setCollections(data);
+        setIsLoadingCollections(false);
+      });
   }, [user]);
 
   // Sync active tab state from query parameter or custom events
@@ -104,6 +116,21 @@ export default function UserDashboard() {
     };
   }, []);
 
+  // Load items when a collection is selected
+  useEffect(() => {
+    if (!selectedCollection) return;
+    setCollectionItems([]);
+    
+    supabase
+      .from("saved_items")
+      .select(`id, created_at, image_id, images(id, title, thumbnail_url, file_url, is_premium)`)
+      .eq("collection_id", selectedCollection)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setCollectionItems(data);
+      });
+  }, [selectedCollection]);
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-brand-surface">
       <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
@@ -111,24 +138,30 @@ export default function UserDashboard() {
   );
   if (!user) return null;
 
-  const handleCreateCollection = (e: React.FormEvent) => {
+  const handleCreateCollection = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newColName.trim()) return;
-    const newCol = {
-      id: "col_" + Date.now(),
-      name: newColName,
-      items: [],
-      emojiList: ["📝"],
-    };
-    setCollections([...collections, newCol]);
+    if (!newColName.trim() || !user) return;
+    
+    const { data: newCol } = await supabase
+      .from("saved_collections")
+      .insert({ user_id: user.id, name: newColName.trim() })
+      .select()
+      .single();
+      
+    if (newCol) {
+      setCollections([newCol, ...collections]);
+    }
     setNewColName("");
     setShowColModal(false);
   };
 
-  const handleDeleteCollection = (id: string, e: React.MouseEvent) => {
+  const handleDeleteCollection = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    await supabase.from("saved_collections").delete().eq("id", id);
     setCollections(collections.filter((c) => c.id !== id));
+    if (selectedCollection === id) setSelectedCollection(null);
   };
 
   // CSV Export simulator -> real export
@@ -341,7 +374,7 @@ export default function UserDashboard() {
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-12 h-12 bg-[#f3f3f3] rounded-lg flex items-center justify-center text-2xl border border-brand-border flex-shrink-0 overflow-hidden">
-                        {dl.images?.thumbnail_url ? <img src={dl.images.thumbnail_url} alt="thumb" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-brand/10"></div>}
+                        {dl.images?.thumbnail_url ? <img src={dl.images.thumbnail_url} alt="thumb" onContextMenu={(e) => e.preventDefault()} onDragStart={(e) => e.preventDefault()} draggable={false} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-brand/10"></div>}
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="text-xs font-black text-brand line-clamp-1">
@@ -438,7 +471,7 @@ export default function UserDashboard() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-[#f3f3f3] rounded-lg flex items-center justify-center text-2xl border border-brand-border overflow-hidden">
-                      {dl.images?.thumbnail_url ? <img src={dl.images.thumbnail_url} alt="thumb" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-brand/10"></div>}
+                      {dl.images?.thumbnail_url ? <img src={dl.images.thumbnail_url} alt="thumb" onContextMenu={(e) => e.preventDefault()} onDragStart={(e) => e.preventDefault()} draggable={false} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-brand/10"></div>}
                     </div>
                     <div className="flex flex-col">
                       <span className="text-xs font-black text-brand line-clamp-1">
@@ -498,14 +531,9 @@ export default function UserDashboard() {
                     >
                       {/* Covers Mosaic (4 cells placeholder) */}
                       <div className="grid grid-cols-2 gap-1.5 aspect-[2/1] bg-brand/50 border border-white/10 rounded-xl p-2 mb-4">
-                        {col.emojiList.map((em, idx) => (
-                          <div key={idx} className="bg-white/10 rounded-lg flex items-center justify-center border border-white/5 text-2xl">
-                            {em}
-                          </div>
-                        ))}
-                        {Array.from({ length: 4 - col.emojiList.length }).map((_, idx) => (
+                        {Array.from({ length: 4 }).map((_, idx) => (
                           <div key={idx} className="bg-white/5 rounded-lg flex items-center justify-center text-[10px] text-white/30 font-bold">
-                            Empty
+                            Image
                           </div>
                         ))}
                       </div>
@@ -516,7 +544,7 @@ export default function UserDashboard() {
                             {col.name}
                           </span>
                           <span className="text-[10px] text-white/70 font-semibold mt-0.5">
-                            {col.items.length} items saved
+                            {col.saved_items?.[0]?.count || 0} items saved
                           </span>
                         </div>
                         <button
@@ -549,44 +577,44 @@ export default function UserDashboard() {
                       <div>
                         <h2 className="text-xl font-black text-brand">{activeCol.name}</h2>
                         <p className="text-xs text-brand-faint font-semibold mt-1">
-                          Folder contains {activeCol.items.length} visuals.
+                          Folder contains {activeCol.saved_items?.[0]?.count || 0} visuals.
                         </p>
                       </div>
 
                       {/* Displaying collection items */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {activeCol.items.length === 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                        {collectionItems.length === 0 ? (
                           <div className="col-span-2 py-16 text-center text-xs text-brand-faint italic bg-white border border-brand-border rounded-2xl shadow-sm">
                             This collection is currently empty.
                           </div>
                         ) : (
-                          realDownloads.slice(0, activeCol.items.length).map((item) => (
-                            <div
+                          collectionItems.map((item) => (
+                            <Link
+                              href={`/image/${item.image_id}`}
                               key={item.id}
-                              className="bg-white border border-brand-border rounded-xl p-4 flex items-center justify-between shadow-sm"
+                              className="bg-white border border-brand-border rounded-xl p-4 flex items-center justify-between shadow-sm group hover:border-brand transition-colors cursor-pointer"
                             >
                               <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 bg-[#f3f3f3] rounded-lg flex items-center justify-center text-2xl border border-brand-border overflow-hidden">
-                                  {item.images?.thumbnail_url ? <img src={item.images.thumbnail_url} alt="thumb" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-brand/10"></div>}
+                                  {item.images?.thumbnail_url || item.images?.file_url ? (
+                                    <img src={item.images.thumbnail_url || item.images.file_url} alt="thumb" onContextMenu={(e) => e.preventDefault()} onDragStart={(e) => e.preventDefault()} draggable={false} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full bg-brand/10 flex items-center justify-center"><FileImage size={16} /></div>
+                                  )}
                                 </div>
                                 <div className="flex flex-col">
-                                  <span className="text-xs font-black text-brand line-clamp-1">
+                                  <span className="text-xs font-black text-brand line-clamp-1 group-hover:text-teal-600 transition-colors">
                                     {item.images?.title || "Untitled"}
                                   </span>
-                                  <span className="text-[9px] text-brand-faint font-semibold">
-                                    {item.download_type}
-                                  </span>
+                                  {item.images?.is_premium && (
+                                    <span className="text-[9px] text-amber-500 font-bold flex items-center gap-0.5 mt-0.5">
+                                      <Crown size={10} /> Premium
+                                    </span>
+                                  )}
                                 </div>
                               </div>
-                              <div className="flex gap-2">
-                                <Link
-                                  href={`/image/${item.image_id}`}
-                                  className="p-1.5 bg-[#f3f3f3] hover:bg-brand text-brand hover:text-white rounded-lg transition-colors border border-brand-border"
-                                >
-                                  View
-                                </Link>
-                              </div>
-                            </div>
+                              <ChevronRight className="w-4 h-4 text-brand-faint group-hover:text-brand transition-colors" />
+                            </Link>
                           ))
                         )}
                       </div>
@@ -708,7 +736,7 @@ export default function UserDashboard() {
                         <ChevronRight className="w-4 h-4 group-open:rotate-90 transition-transform text-brand" />
                       </summary>
                       <p className="text-brand-muted font-medium leading-relaxed mt-2 pl-1">
-                        Subscriptions are billed monthly or annually. You can upgrade instantly using Sri Lanka's PayHere payment gateway supporting credit cards and mobile wallets.
+                        Subscriptions are billed monthly or annually. You can upgrade instantly using the World's PayHere payment gateway supporting credit cards and mobile wallets.
                       </p>
                     </details>
                     <details className="group border-b border-brand-border pb-3 cursor-pointer">
@@ -799,7 +827,7 @@ export default function UserDashboard() {
                           <td className="py-3">Premium Renewal</td>
                           <td className="py-3">{formatLKR(499)}</td>
                           <td className="py-3 text-right">
-                            <button onClick={() => { alert("Invoice download coming soon. Contact support@eduvisuals.lk"); }} className="text-brand font-bold hover:underline">
+                            <button onClick={() => { alert("Invoice download coming soon. Contact support@eduvisuals.com"); }} className="text-brand font-bold hover:underline">
                               Download
                             </button>
                           </td>
@@ -810,7 +838,7 @@ export default function UserDashboard() {
                           <td className="py-3">Premium Activation</td>
                           <td className="py-3">{formatLKR(499)}</td>
                           <td className="py-3 text-right">
-                            <button onClick={() => { alert("Invoice download coming soon. Contact support@eduvisuals.lk"); }} className="text-brand font-bold hover:underline">
+                            <button onClick={() => { alert("Invoice download coming soon. Contact support@eduvisuals.com"); }} className="text-brand font-bold hover:underline">
                               Download
                             </button>
                           </td>
@@ -899,37 +927,7 @@ export default function UserDashboard() {
               </div>
             </div>
 
-            <div className="bg-white border border-brand-border rounded-2xl p-6 shadow-sm flex flex-col gap-4">
-              <h3 className="font-extrabold text-sm text-brand border-b border-brand-border pb-2">
-                Sandbox Mode Simulator Actions
-              </h3>
-              
-              <div className="flex flex-wrap gap-2.5">
-                <button
-                  onClick={() => {
-                    const next = { ...user, tier: isPremium ? "Free" : "Premium" };
-                    localStorage.setItem("edu_user", JSON.stringify(next));
-                    window.dispatchEvent(new Event("auth-changed"));
-                    alert(`Simulated tier switched to: ${next.tier}`);
-                  }}
-                  className="bg-brand hover:bg-brand text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-sm"
-                >
-                  Toggle Premium Mode Simulator
-                </button>
 
-                <button
-                  onClick={() => {
-                    const next = { ...user, role: user.role === "admin" ? "free_user" : "admin" };
-                    localStorage.setItem("edu_user", JSON.stringify(next));
-                    window.dispatchEvent(new Event("auth-changed"));
-                    alert(`Simulated role switched to: ${next.role}`);
-                  }}
-                  className="bg-brand hover:bg-brand text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-sm"
-                >
-                  Toggle Admin Role Simulator
-                </button>
-              </div>
-            </div>
 
           </div>
         )}

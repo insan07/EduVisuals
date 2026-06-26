@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AuthModal from "@/components/AuthModal";
+import CollectionModal from "@/components/CollectionModal";
 import Toast from "@/components/Toast";
 import "./globals.css";
 
@@ -13,23 +14,23 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "EduVisuals.lk — Sri Lanka's Premium AI Educational Visual Library",
+  title: "EduVisuals — World's Premium AI Educational Visual Library",
   description:
-    "Sri Lanka's premier AI educational image platform. Access high-quality, local curriculum-aligned diagrams, illustrations, and visual aids for science, history, geography, and more.",
-  metadataBase: new URL("https://eduvisuals.lk"),
+    "World's premier AI educational image platform. Access high-quality, local curriculum-aligned diagrams, illustrations, and visual aids for science, history, geography, and more.",
+  metadataBase: new URL("https://eduvisuals.com"),
   manifest: "/manifest.json",
   openGraph: {
-    title: "EduVisuals.lk — Sri Lanka's Premium AI Educational Visual Library",
+    title: "EduVisuals — World's Premium AI Educational Visual Library",
     description:
-      "Sri Lanka's premier AI educational image platform. Access high-quality, local curriculum-aligned diagrams, illustrations, and visual aids for science, history, geography, and more.",
-    url: "https://eduvisuals.lk",
-    siteName: "EduVisuals.lk",
+      "World's premier AI educational image platform. Access high-quality, local curriculum-aligned diagrams, illustrations, and visual aids for science, history, geography, and more.",
+    url: "https://eduvisuals.com",
+    siteName: "EduVisuals",
     images: [
       {
         url: "/images/og-image.png",
         width: 1200,
         height: 630,
-        alt: "EduVisuals.lk — Sri Lanka's Educational Visual Library",
+        alt: "EduVisuals — World's Educational Visual Library",
       },
     ],
     locale: "en_LK",
@@ -37,9 +38,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "EduVisuals.lk — Sri Lanka's Premium AI Educational Visual Library",
+    title: "EduVisuals — World's Premium AI Educational Visual Library",
     description:
-      "Sri Lanka's premier AI educational image platform. Access high-quality, local curriculum-aligned diagrams, illustrations, and visual aids.",
+      "World's premier AI educational image platform. Access high-quality, local curriculum-aligned diagrams, illustrations, and visual aids.",
     images: ["/images/og-image.png"],
   },
 };
@@ -54,6 +55,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-brand-surface text-brand flex flex-col font-sans antialiased pt-14 md:pt-16">
         <Navbar />
         <AuthModal />
+        <CollectionModal />
         <Toast />
         <main className="flex-1 flex flex-col w-full">{children}</main>
         <Footer />

@@ -18,10 +18,10 @@ export default function AboutPage() {
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-brand tracking-tight leading-none mb-3">
-            About EduVisuals.lk
+            About EduVisuals
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-brand-muted max-w-xl mx-auto font-medium">
-            Empowering Sri Lankan students and educators with high-fidelity, local curriculum-aligned visual study aids.
+            Empowering Global students and educators with high-fidelity, local curriculum-aligned visual study aids.
           </p>
         </div>
 
@@ -37,7 +37,7 @@ export default function AboutPage() {
                 The Learning Challenge
               </h3>
               <p className="text-xs text-[rgba(0,57,60,0.7)] leading-relaxed font-medium">
-                Traditional textbooks are often dense, text-heavy, and difficult to digest during high-pressure G.C.E. O/L and A/L exam preparations. Research shows that the human brain processes visual information 60,000 times faster than text, yet high-quality, syllabus-aligned educational diagrams are incredibly hard to find in Sri Lanka.
+                Traditional textbooks are often dense, text-heavy, and difficult to digest during high-stakes exam preparations. Research shows that the human brain processes visual information 60,000 times faster than text, yet high-quality, syllabus-aligned educational diagrams are incredibly hard to find in the World.
               </p>
             </div>
           </div>
@@ -51,7 +51,7 @@ export default function AboutPage() {
                 Our Visual Solution <Sparkles className="w-4 h-4 text-brand" />
               </h3>
               <p className="text-xs text-[rgba(0,57,60,0.7)] leading-relaxed font-medium">
-                EduVisuals.lk bridges this gap by offering a curated repository of clean, high-resolution, AI-upscaled educational mind maps, anatomy diagrams, cycle flowcharts, and cheat sheets. Every visual asset is tailored specifically to the National, Cambridge, and Edexcel syllabi, reviewed by educators, and offered in high-resolution vector and HD formats.
+                EduVisuals bridges this gap by offering a curated repository of clean, high-resolution, AI-upscaled educational mind maps, anatomy diagrams, cycle flowcharts, and cheat sheets. Every visual asset is tailored specifically to the National, Cambridge, and Edexcel syllabi, reviewed by educators, and offered in high-resolution vector and HD formats.
               </p>
             </div>
           </div>
@@ -71,7 +71,7 @@ export default function AboutPage() {
               </div>
               <h4 className="text-xs font-black text-brand mb-1.5">Syllabus Alignment</h4>
               <p className="text-[10px] text-brand-muted font-semibold leading-relaxed">
-                Directly mapping to Local O/L & A/L frameworks to guarantee visual revision precision.
+                Directly mapping to international and local curriculum frameworks to guarantee visual revision precision.
               </p>
             </div>
 
@@ -104,7 +104,7 @@ export default function AboutPage() {
             Accelerate Your Learning Journey
           </h3>
           <p className="text-xs text-white/80 max-w-xl mx-auto mb-6 leading-relaxed">
-            Join thousands of Sri Lankan students, teachers, and visual creators collaborating to build the country's largest curriculum-aligned graphic learning archive.
+            Join thousands of Global students, teachers, and visual creators collaborating to build the country's largest curriculum-aligned graphic learning archive.
           </p>
           <div className="flex flex-wrap justify-center gap-3 font-extrabold text-xs">
             <Link

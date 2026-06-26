@@ -85,7 +85,7 @@ export default function ContactPage() {
             </div>
             <div className="flex flex-col text-xs font-semibold">
               <span className="text-[10px] font-bold text-brand-faint uppercase">Location</span>
-              <span className="text-brand font-black mt-1.5 text-sm">Puttalam, Sri Lanka</span>
+              <span className="text-brand font-black mt-1.5 text-sm">Global Headquarters</span>
             </div>
           </div>
 

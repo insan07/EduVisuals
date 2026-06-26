@@ -98,9 +98,8 @@ const ImageCardComponent: React.FC<ImageCardProps> = ({
         {/* Badges layer */}
         <div className="absolute top-2.5 left-2.5 z-20 flex flex-col gap-1.5 pointer-events-none">
           {isPremium ? (
-            <span className="flex items-center gap-1 text-[8px] font-black tracking-wider uppercase bg-brand text-white px-2 py-0.5 rounded border border-brand-border shadow-sm">
-              <Crown className="w-2.5 h-2.5 text-white" />
-              Premium
+            <span className="flex items-center justify-center bg-gradient-to-br from-amber-400 to-yellow-500 p-1.5 rounded-lg border border-yellow-300 shadow-sm pointer-events-none" title="Premium">
+              <Crown className="w-3.5 h-3.5 text-[#073238] fill-[#073238]" />
             </span>
           ) : (
             <span className="text-[8px] font-black tracking-wider uppercase bg-white text-brand px-2 py-0.5 rounded border border-brand-border shadow-sm">
@@ -117,8 +116,8 @@ const ImageCardComponent: React.FC<ImageCardProps> = ({
 
         {/* Premium visual overlay badge */}
         {isPremium && (
-          <div className="absolute bottom-2.5 right-2.5 z-20 bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-brand-border shadow-sm pointer-events-none">
-            <Crown className="w-3.5 h-3.5 text-brand" />
+          <div className="absolute bottom-2.5 right-2.5 z-20 bg-gradient-to-br from-amber-400 to-yellow-500 p-1.5 rounded-lg border border-yellow-300 shadow-md pointer-events-none">
+            <Crown className="w-3.5 h-3.5 text-[#073238] fill-[#073238]" />
           </div>
         )}
 

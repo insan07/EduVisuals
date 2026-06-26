@@ -14,7 +14,7 @@ interface CategoryPageProps {
 const mockCategoryVisuals = [
   { id: "1", title: "Plant Cell Structure Diagram", subject: "Biology", grade: "OL" as const, type: "Diagram" as const, isPremium: false, downloads: 1420, emoji: "🌿", colorClass: "from-emerald-50 to-emerald-100/50 text-emerald-600", topic: "Cell Biology", thumbnailUrl: "https://placehold.co/400x300/e8ecec/00393c?text=%F0%9F%8C%BF+Plant+Cell" },
   { id: "8", title: "Human Respiratory System Diagram", subject: "Biology", grade: "OL" as const, type: "Diagram" as const, isPremium: false, downloads: 1680, emoji: "🫁", colorClass: "from-rose-50 to-rose-100/50 text-rose-600", topic: "Human Body Systems", thumbnailUrl: "https://placehold.co/400x300/e8ecec/00393c?text=%F0%9F%AB%81+Lungs" },
-  { id: "9", title: "O/L Science Mind Maps (Full Syllabus)", subject: "Biology", grade: "OL" as const, type: "Mind Map" as const, isPremium: false, downloads: 3410, emoji: "📝", colorClass: "from-teal-50 to-teal-100/50 text-teal-600", topic: "Genetics & DNA", thumbnailUrl: "https://placehold.co/400x300/e8ecec/00393c?text=%F0%9F%93%9D+Science" },
+  { id: "9", title: "High School Science Mind Maps (Full Syllabus)", subject: "Biology", grade: "OL" as const, type: "Mind Map" as const, isPremium: false, downloads: 3410, emoji: "📝", colorClass: "from-teal-50 to-teal-100/50 text-teal-600", topic: "Genetics & DNA", thumbnailUrl: "https://placehold.co/400x300/e8ecec/00393c?text=%F0%9F%93%9D+Science" },
   { id: "2", title: "Organic Chemistry Reaction Mechanism", subject: "Chemistry", grade: "AL" as const, type: "Mind Map" as const, isPremium: true, downloads: 890, emoji: "🧪", colorClass: "from-purple-50 to-purple-100/50 text-purple-600", topic: "Organic Reactions", thumbnailUrl: "https://placehold.co/400x300/e8ecec/00393c?text=%F0%9F%A7%AA+Organic" },
   { id: "7", title: "AC Generator Vector Diagram", subject: "Physics", grade: "AL" as const, type: "Diagram" as const, isPremium: true, downloads: 520, emoji: "⚡", colorClass: "from-indigo-50 to-indigo-100/50 text-indigo-600", topic: "Electromagnetism", thumbnailUrl: "https://placehold.co/400x300/e8ecec/00393c?text=%E2%9A%A1+AC+Gen" },
   { id: "4", title: "Gravitational Field Equations Map", subject: "Physics", grade: "University" as const, type: "Mind Map" as const, isPremium: true, downloads: 640, emoji: "🪐", colorClass: "from-blue-50 to-blue-100/50 text-blue-600", topic: "Quantum Mechanics", thumbnailUrl: "https://placehold.co/400x300/e8ecec/00393c?text=%F0%9F%AA%A5+Gravity" },
@@ -54,13 +54,13 @@ export default function CategoryLandingPage({ params }: CategoryPageProps) {
   const schemaStructuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "name": `${subjectName} Diagrams & Mind Maps for O/L and A/L | EduVisuals.lk`,
-    "description": `Download free AI-generated ${subjectName.toLowerCase()} diagrams, mind maps, and study visuals for O/L and A/L students in Sri Lanka.`,
-    "url": `https://eduvisuals.lk/category/${subjectSlug}`,
+    "name": `${subjectName} Diagrams & Mind Maps for Students & Educators | EduVisuals`,
+    "description": `Download free AI-generated ${subjectName.toLowerCase()} diagrams, mind maps, and study visuals for students and educators across all academic levels worldwide.`,
+    "url": `https://eduvisuals.com/category/${subjectSlug}`,
     "provider": {
       "@type": "Organization",
-      "name": "EduVisuals.lk",
-      "logo": "https://eduvisuals.lk/logo.png"
+      "name": "EduVisuals",
+      "logo": "https://eduvisuals.com/logo.png"
     }
   };
 

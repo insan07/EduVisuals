@@ -6,7 +6,7 @@ const databaseImages = [
   { id: "2", title: "Organic Chemistry Reaction Mechanism", isPremium: true },
   { id: "3", title: "Sigiriya Rock Fortress 3D Layout", isPremium: false },
   { id: "4", title: "Gravitational Field Equations Map", isPremium: true },
-  { id: "5", title: "Sri Lanka Climatic Zones Map", isPremium: false },
+  { id: "5", title: "the World Climatic Zones Map", isPremium: false },
   { id: "6", title: "SQL Database Schema Mind Map", isPremium: false },
   { id: "7", title: "AC Generator Vector Diagram", isPremium: true },
   { id: "8", title: "Human Respiratory System Diagram", isPremium: false },
@@ -72,7 +72,7 @@ export function generateSignedDownloadUrl(
   // Secure signed URL simulation
   const signature = Buffer.from(`${imageId}:${userId}:${expirationTime}:edu_secure_secret`).toString("base64").substring(0, 16);
   
-  const signedUrl = `https://cdn.eduvisuals.lk/secure-downloads/${imageId}?token=${signature}&expires=${expirationTime}`;
+  const signedUrl = `https://cdn.eduvisuals.com/secure-downloads/${imageId}?token=${signature}&expires=${expirationTime}`;
   
   console.log(`[SIGNED URL GENERATED] Image: ${imageId} | User: ${userId} | Expires: ${new Date(expirationTime * 1000).toISOString()}`);
   
@@ -94,7 +94,7 @@ export async function addWatermark(
     const svgWatermark = `
       <svg width="400" height="60">
         <text x="10" y="40" font-family="sans-serif" font-size="24" font-weight="900" fill="rgba(0, 57, 60, 0.15)">
-          EduVisuals.lk · ID: ${userId.substring(0, 8)}
+          EduVisuals · ID: ${userId.substring(0, 8)}
         </text>
       </svg>
     `;
@@ -109,7 +109,7 @@ export async function addWatermark(
       .withMetadata({
         exif: {
           IFD0: {
-            Copyright: `EduVisuals.lk - Protected Content for User ${userId}`,
+            Copyright: `EduVisuals - Protected Content for User ${userId}`,
           },
         },
       })

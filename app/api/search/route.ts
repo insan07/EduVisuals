@@ -51,9 +51,15 @@ export async function GET(request: NextRequest) {
       .eq("is_published", true)
       .eq("status", "approved");
 
-    // Full-text search on title + description
+    let isMemorySearch = false;
+    let queryWords: string[] = [];
+
+    // Multi-word fuzzy search strategy:
+    // If there is a search term, we will fetch up to 400 results matching the other filters,
+    // and then perform a Levenshtein-based fuzzy match in memory to tolerate spelling mistakes.
     if (q) {
-      query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%`);
+      isMemorySearch = true;
+      queryWords = q.trim().split(/\s+/).filter(w => w.length > 0);
     }
 
     // Tag-based filters — filter by image_ids that have matching tags
@@ -99,20 +105,93 @@ export async function GET(request: NextRequest) {
     else if (sort === "newest") query = query.order("created_at", { ascending: false });
     else query = query.order("download_count", { ascending: false }); // default relevance
 
-    // Pagination
-    query = query.range(offset, offset + pageSize - 1);
+    // Pagination or Broad Fetch for memory search
+    if (isMemorySearch) {
+      query = query.limit(500); // Fetch a larger chunk for fuzzy filtering
+    } else {
+      query = query.range(offset, offset + pageSize - 1);
+    }
 
     const { data, count, error } = await query;
     if (error) throw error;
 
+    // Helper for fuzzy string matching (Levenshtein)
+    function levenshtein(a: string, b: string): number {
+      if (a.length === 0) return b.length;
+      if (b.length === 0) return a.length;
+      const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+      for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
+      for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+      for (let j = 1; j <= b.length; j++) {
+        for (let i = 1; i <= a.length; i++) {
+          const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
+          matrix[j][i] = Math.min(
+            matrix[j][i - 1] + 1,
+            matrix[j - 1][i] + 1,
+            matrix[j - 1][i - 1] + indicator
+          );
+        }
+      }
+      return matrix[b.length][a.length];
+    }
+
+    function getFuzzyScore(text: string, queryWord: string, weight: number): number {
+      if (!text) return 0;
+      const textLower = text.toLowerCase();
+      const qLower = queryWord.toLowerCase();
+      
+      if (textLower === qLower) return 10 * weight; // Exact match
+      
+      if (textLower.includes(qLower)) {
+        const regex = new RegExp(`\\b${qLower}\\b`);
+        if (regex.test(textLower)) return 8 * weight; // Exact word match
+        return 5 * weight; // Substring match
+      }
+      
+      const textWords = textLower.split(/[\s,.-]+/);
+      const maxDist = qLower.length <= 4 ? 1 : 2;
+      for (const tw of textWords) {
+        if (Math.abs(tw.length - qLower.length) <= maxDist) {
+          const dist = levenshtein(tw, qLower);
+          if (dist <= maxDist) {
+            return (3 - dist) * weight;
+          }
+        }
+      }
+      return 0;
+    }
+
     // Flatten tags into subject/grade/type fields for frontend
-    const images = (data || []).map((img: any) => {
+    let images = (data || []).map((img: any) => {
       const tags = img.image_tags || [];
       const subject = tags.find((t: any) => t.tag_type === "subject")?.tag || "General";
       const grade = tags.find((t: any) => t.tag_type === "grade")?.tag || "General";
       const type = tags.find((t: any) => t.tag_type === "type")?.tag || "Diagram";
       const syllabus = tags.find((t: any) => t.tag_type === "syllabus")?.tag || "";
       const medium = tags.find((t: any) => t.tag_type === "medium")?.tag || "";
+      
+      let searchScore = 0;
+      if (isMemorySearch && queryWords.length > 0) {
+        let matchesAll = true;
+        for (const word of queryWords) {
+          let wordScore = 0;
+          wordScore += getFuzzyScore(img.title, word, 4);
+          wordScore += getFuzzyScore(subject, word, 3);
+          wordScore += getFuzzyScore(grade, word, 3);
+          wordScore += getFuzzyScore(type, word, 3);
+          wordScore += getFuzzyScore(syllabus, word, 3);
+          wordScore += getFuzzyScore(medium, word, 3);
+          wordScore += getFuzzyScore(img.description, word, 1);
+          
+          if (wordScore === 0) {
+            matchesAll = false;
+            break;
+          }
+          searchScore += wordScore;
+        }
+        if (!matchesAll) searchScore = -1;
+      }
+
       return {
         id: img.id,
         title: img.title,
@@ -126,18 +205,43 @@ export async function GET(request: NextRequest) {
         type,
         syllabus,
         medium,
+        searchScore, // internal use
       };
     });
 
-    const total = count || 0;
+    let totalCount = count || 0;
+
+    // Apply memory fuzzy filter and sort if needed
+    if (isMemorySearch && queryWords.length > 0) {
+      images = images.filter((img: any) => img.searchScore > 0);
+      
+      if (sort === "relevant") {
+        images.sort((a: any, b: any) => {
+          if (b.searchScore !== a.searchScore) return b.searchScore - a.searchScore;
+          return b.downloadCount - a.downloadCount;
+        });
+      }
+
+      totalCount = images.length;
+      
+      // Pagination slice
+      images = images.slice(offset, offset + pageSize);
+    }
+
+    // Remove internal fields
+    images = images.map(img => {
+      const { searchScore, ...rest } = img;
+      return rest;
+    });
+
     return NextResponse.json({
       images,
-      total,
+      total: totalCount,
       page,
-      hasMore: offset + pageSize < total,
+      hasMore: offset + pageSize < totalCount,
     });
-  } catch (error: any) {
-    console.error("Search error:", error);
-    return NextResponse.json({ error: "Search failed", images: [], total: 0 }, { status: 500 });
+  } catch (error) {
+    console.error("Search Error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

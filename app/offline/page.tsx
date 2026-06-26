@@ -47,7 +47,7 @@ export default function OfflinePage() {
         </div>
 
         <p className="text-[10px] text-brand-faint mt-6">
-          EduVisuals.lk · Offline Visual Library Cache
+          EduVisuals · Offline Visual Library Cache
         </p>
       </div>
     </div>

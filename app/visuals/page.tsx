@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense, useRef } from "react";
+import { downloadWithWatermark } from "@/lib/watermark";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useAuthModal } from "@/store/useAuthModal";
+import { useCollectionModal } from "@/store/useCollectionModal";
 import SearchBar from "@/components/SearchBar";
 import {
   Filter,
@@ -41,19 +43,31 @@ interface Visual {
 
 /* ─────────────────────────── Static Filter Options ─────────────────────────── */
 
-const GRADES = ["OL", "AL", "Grade 6-9", "University", "General"];
-const SUBJECTS = [
-  "Biology", "Chemistry", "Physics", "Mathematics", "ICT",
-  "History", "Geography", "Commerce", "Sinhala", "Tamil", "English", "Art",
+const SUBJECTS: (string | { group: string; options: string[] })[] = [
+  { group: "Sciences", options: ["Physics", "Chemistry", "Biology", "Environmental Science"] },
+  "Mathematics & Statistics",
+  { group: "Engineering", options: ["Mechanical Engineering", "Electrical Engineering", "Civil Engineering", "Computer/Software Engineering", "Chemical Engineering", "Electronics"] },
+  { group: "Computer Science / IT", options: ["Programming", "AI/ML", "Cybersecurity", "Data Science"] },
+  "Medicine & Health Sciences",
+  "Business, Economics & Finance",
+  "Law",
+  { group: "Arts & Humanities", options: ["History", "Literature", "Philosophy", "Languages"] },
+  { group: "Social Sciences", options: ["Psychology", "Sociology", "Political Science"] },
+  "Architecture & Design",
+  "Agriculture"
 ];
-const TYPES = [
-  "Mind Map", "Diagram", "Graph", "Flowchart", "Timeline",
-  "Illustration", "Comparison Table", "Cheat Sheet",
+const GRADES = ["Pre-primary / Kindergarten", "Primary / Elementary", "Middle School", "High School", "O/L (Ordinary Level)", "A/L (Advanced Level)", "Undergraduate", "Postgraduate", "Doctoral / PhD", "Professional / Certifications"];
+const TYPES = ["Mind Map", "Diagram", "Graph", "Flowchart", "Timeline", "Illustration", "Comparison Table", "Cheat Sheet"];
+const SYLLABUSES: (string | { group: string; options: string[] })[] = [
+  { group: "International", options: ["IB Diploma", "Cambridge IGCSE", "Cambridge A-Level", "Edexcel/Pearson"] },
+  { group: "US", options: ["Common Core", "AP (Advanced Placement)", "State Standards"] },
+  { group: "UK", options: ["National Curriculum", "AQA", "OCR"] },
+  { group: "India", options: ["CBSE", "ICSE", "State Boards"] },
+  { group: "Sri Lanka", options: ["National Syllabus", "Local University"] },
+  "National Curriculum (Other)",
+  { group: "Exam-Prep", options: ["SAT", "GRE", "GMAT", "JEE", "NEET", "IELTS"] }
 ];
-const SYLLABUSES = [
-  "National Syllabus", "Cambridge", "Edexcel", "Local University",
-];
-const MEDIUMS = ["English Medium", "Sinhala Medium", "Tamil Medium"];
+const MEDIUMS = ["English", "Sinhala", "Tamil", "Mandarin Chinese", "Spanish", "Hindi", "Arabic", "French", "Portuguese", "Russian", "Bengali", "German", "Japanese", "Indonesian/Malay", "Urdu", "Other"];
 
 /* ─────────────────────────── Helpers ─────────────────────────────────── */
 
@@ -70,6 +84,7 @@ function SearchResultsContent() {
   const router = useRouter();
   const pathname = usePathname();
   const openAuthModal = useAuthModal((s) => s.open);
+  const openCollectionModal = useCollectionModal((s) => s.open);
 
   /* ── URL-derived state ── */
   const q = searchParams.get("q") || "";
@@ -195,31 +210,32 @@ function SearchResultsContent() {
   };
 
   /* ── Download handler ── */
-  const handleDownload = (visual: Visual) => {
+  const handleDownload = async (visual: Visual) => {
     if (visual.is_premium) {
       openAuthModal(visual.file_url);
       return;
     }
-    const downloadUrl = visual.file_url.includes('?') 
-      ? `${visual.file_url}&download=` 
-      : `${visual.file_url}?download=`;
     
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = visual.title || "eduvisuals-download";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      await downloadWithWatermark(visual.file_url, visual.title || "eduvisuals-download");
+    } catch (e) {
+      console.error("Watermark generation failed, falling back to direct download", e);
+      const downloadUrl = visual.file_url.includes('?') 
+        ? `${visual.file_url}&download=` 
+        : `${visual.file_url}?download=`;
+      
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = visual.title || "eduvisuals-download";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   /* ── Save/heart toggle ── */
-  const toggleSave = (id: string) => {
-    setSavedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const toggleSave = (id: string, title?: string) => {
+    openCollectionModal(id, title);
   };
 
   /* ════════════════════════════ RENDER ════════════════════════════════ */
@@ -235,25 +251,44 @@ function SearchResultsContent() {
             className="w-full"
           />
 
-          {/* ── Content Type Tabs ── */}
-          <div style={{ display: "flex", gap: "0.5rem", width: "100%", justifyContent: "flex-start", flexWrap: "wrap" }}>
-            {(["all", "free", "premium"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => updateParams({ content: tab === "all" ? null : tab })}
-                style={{
-                  padding: "0.35rem 1rem", borderRadius: "2rem",
-                  border: contentType === tab ? "none" : "1px solid rgba(0,57,60,0.15)",
-                  background: contentType === tab ? "#073238" : "transparent",
-                  color: contentType === tab ? "#ffffff" : "#00393c",
-                  fontSize: "0.82rem", fontWeight: 600, cursor: "pointer",
-                  textTransform: "capitalize",
-                }}
+          {/* ── Content Type Tabs & Sort Dropdown ── */}
+          <div className="flex w-full items-center justify-between flex-wrap gap-3">
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              {(["all", "free", "premium"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => updateParams({ content: tab === "all" ? null : tab })}
+                  style={{
+                    padding: "0.35rem 1rem", borderRadius: "2rem",
+                    border: contentType === tab ? "none" : "1px solid rgba(0,57,60,0.15)",
+                    background: contentType === tab ? "#073238" : "transparent",
+                    color: contentType === tab ? "#ffffff" : "#00393c",
+                    fontSize: "0.82rem", fontWeight: 600, cursor: "pointer",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {tab === "premium" && <Crown size={12} style={{ display: "inline", marginRight: "0.3rem", verticalAlign: "middle" }} />}
+                  {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {/* Sort dropdown */}
+            <div className="relative flex-shrink-0 w-full sm:w-auto">
+              <select
+                value={sortBy}
+                onChange={(e) => updateParams({ sort: e.target.value === "latest" ? null : e.target.value })}
+                className="w-full sm:w-auto appearance-none bg-white border border-[rgba(0,57,60,0.15)] rounded-full py-1.5 pl-3 pr-8 text-sm text-[#00393c] cursor-pointer font-bold outline-none hover:bg-gray-50 transition-colors"
               >
-                {tab === "premium" && <Crown size={12} style={{ display: "inline", marginRight: "0.3rem", verticalAlign: "middle" }} />}
-                {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
+                <option value="latest">Latest</option>
+                <option value="relevant">Relevant</option>
+                <option value="downloaded">Most Downloaded</option>
+              </select>
+              <ChevronDown
+                size={14}
+                style={{ position: "absolute", right: "0.8rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#073238" }}
+              />
+            </div>
           </div>
 
           {/* ── Filters and Sort Container ── */}
@@ -357,76 +392,18 @@ function SearchResultsContent() {
               {activeDropdown === "MobileFilters" && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 flex flex-col gap-5 max-h-[60vh] overflow-y-auto">
                   
-                  {/* Grade */}
-                  <div>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Grade</div>
-                    <div className="flex flex-wrap gap-2">
-                      {GRADES.map(opt => (
-                        <button key={opt} onClick={() => toggleFilter("grade", opt, activeGrades)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", activeGrades.includes(opt) ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>{opt}</button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Subject */}
-                  <div>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Subject</div>
-                    <div className="flex flex-wrap gap-2">
-                      {SUBJECTS.map(opt => (
-                        <button key={opt} onClick={() => toggleFilter("subject", opt, activeSubjects)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", activeSubjects.includes(opt) ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>{opt}</button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Type */}
-                  <div>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Type</div>
-                    <div className="flex flex-wrap gap-2">
-                      {TYPES.map(opt => (
-                        <button key={opt} onClick={() => toggleFilter("type", opt, activeTypes)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", activeTypes.includes(opt) ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>{opt}</button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Syllabus */}
-                  <div>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Syllabus</div>
-                    <div className="flex flex-wrap gap-2">
-                      {SYLLABUSES.map(opt => (
-                        <button key={opt} onClick={() => toggleFilter("syllabus", opt, activeSyllabi)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", activeSyllabi.includes(opt) ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>{opt}</button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Medium */}
-                  <div>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Medium</div>
-                    <div className="flex flex-wrap gap-2">
-                      {MEDIUMS.map(opt => (
-                        <button key={opt} onClick={() => toggleFilter("medium", opt, activeMediums)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", activeMediums.includes(opt) ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>{opt}</button>
-                      ))}
-                    </div>
-                  </div>
+                  <MobileFilterGroup title="Grade" options={GRADES} active={activeGrades} onToggle={(v) => toggleFilter("grade", v, activeGrades)} />
+                  <MobileFilterGroup title="Subject" options={SUBJECTS} active={activeSubjects} onToggle={(v) => toggleFilter("subject", v, activeSubjects)} />
+                  <MobileFilterGroup title="Type" options={TYPES} active={activeTypes} onToggle={(v) => toggleFilter("type", v, activeTypes)} />
+                  <MobileFilterGroup title="Syllabus" options={SYLLABUSES} active={activeSyllabi} onToggle={(v) => toggleFilter("syllabus", v, activeSyllabi)} />
+                  <MobileFilterGroup title="Medium" options={MEDIUMS} active={activeMediums} onToggle={(v) => toggleFilter("medium", v, activeMediums)} />
 
                 </div>
               )}
             </div>
 
-            {/* Sort dropdown */}
-            <div className="relative flex-shrink-0 w-full md:w-auto mt-1 md:mt-0">
-              <select
-                value={sortBy}
-                onChange={(e) => updateParams({ sort: e.target.value === "latest" ? null : e.target.value })}
-                className="w-full md:w-auto appearance-none bg-white border border-[rgba(0,57,60,0.15)] rounded-full py-2 pl-3 pr-8 text-sm text-[#00393c] cursor-pointer font-medium outline-none"
-              >
-                <option value="latest">Latest</option>
-                <option value="downloaded">Most Downloaded</option>
-              </select>
-              <ChevronDown
-                size={14}
-                style={{ position: "absolute", right: "0.8rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#073238" }}
-              />
+            {/* Sort dropdown moved to top row */}
             </div>
-          </div>
         </div>
 
         {/* ── Admin / Teacher Upload Banner ── */}
@@ -516,7 +493,7 @@ function SearchResultsContent() {
                   <VisualCard
                     visual={visual}
                     isSaved={savedIds.has(visual.id)}
-                    onSave={() => toggleSave(visual.id)}
+                    onSave={() => toggleSave(visual.id, visual.title)}
                     onDownload={() => handleDownload(visual)}
                   />
                 </div>
@@ -570,7 +547,7 @@ function FilterDropdown({
   onToggleOption,
 }: {
   title: string;
-  options: string[];
+  options: (string | { group: string; options: string[] })[];
   active: string[];
   isOpen: boolean;
   onToggleDropdown: () => void;
@@ -611,27 +588,91 @@ function FilterDropdown({
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 p-3 w-56 z-50 flex flex-col gap-2 max-h-64 overflow-y-auto">
-          {options.map((opt) => {
-            const isActive = active.includes(opt);
-            return (
-              <label
-                key={opt}
-                className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={isActive}
-                  onChange={() => onToggleOption(opt)}
-                  style={{ accentColor: "#073238", width: 16, height: 16 }}
-                />
-                <span className={cn("text-sm", isActive ? "font-semibold text-[#073238]" : "text-gray-700")}>
-                  {opt}
-                </span>
-              </label>
-            );
+          {options.map((opt, idx) => {
+            if (typeof opt === 'string') {
+              const isActive = active.includes(opt);
+              return (
+                <label
+                  key={opt}
+                  className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={() => onToggleOption(opt)}
+                    style={{ accentColor: "#073238", width: 16, height: 16 }}
+                  />
+                  <span className={cn("text-sm", isActive ? "font-semibold text-[#073238]" : "text-gray-700")}>
+                    {opt}
+                  </span>
+                </label>
+              );
+            } else {
+              return (
+                <div key={opt.group} className={cn("mb-1", idx > 0 && "mt-3 border-t border-gray-100 pt-2")}>
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-2">{opt.group}</div>
+                  {opt.options.map(subOpt => {
+                    const isActive = active.includes(subOpt);
+                    return (
+                      <label
+                        key={subOpt}
+                        className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isActive}
+                          onChange={() => onToggleOption(subOpt)}
+                          style={{ accentColor: "#073238", width: 16, height: 16 }}
+                        />
+                        <span className={cn("text-sm", isActive ? "font-semibold text-[#073238]" : "text-gray-700")}>
+                          {subOpt}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              );
+            }
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── MobileFilterGroup ── */
+function MobileFilterGroup({ title, options, active, onToggle }: { title: string, options: (string | {group: string, options: string[]})[], active: string[], onToggle: (v: string) => void }) {
+  return (
+    <div>
+      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{title}</div>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          if (typeof opt === 'string') {
+            const isActive = active.includes(opt);
+            return (
+              <button key={opt} onClick={() => onToggle(opt)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", isActive ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>
+                {opt}
+              </button>
+            );
+          } else {
+            return (
+              <div key={opt.group} className="w-full mt-2 mb-1">
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{opt.group}</div>
+                <div className="flex flex-wrap gap-2">
+                  {opt.options.map((subOpt) => {
+                    const isActive = active.includes(subOpt);
+                    return (
+                      <button key={subOpt} onClick={() => onToggle(subOpt)} className={cn("px-3 py-1.5 rounded-lg text-sm transition-colors border", isActive ? "bg-[#073238] text-white border-[#073238]" : "bg-gray-50 text-gray-700 border-transparent")}>
+                        {subOpt}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+        })}
+      </div>
     </div>
   );
 }
@@ -679,6 +720,9 @@ function VisualCard({
         <img
           src={imgSrc}
           alt={visual.title}
+          onContextMenu={(e) => e.preventDefault()}
+          onDragStart={(e) => e.preventDefault()}
+          draggable={false}
           onError={() => {
             const fallbackSrc = visual.thumbnailUrl || visual.thumbnail_url;
             if (imgSrc === fallbackSrc && visual.file_url && visual.file_url !== fallbackSrc) {

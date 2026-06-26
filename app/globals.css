@@ -101,3 +101,11 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 57, 60, 0.35);
 }
+
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

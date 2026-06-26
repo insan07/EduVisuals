@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
       .from('images')
       .select('id, title, status, is_premium, download_count, created_at, rejection_reason, uploaded_by, image_tags(tag, tag_type)')
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(1000);
     if (data) setImages(data);
   };
 
@@ -135,14 +135,6 @@ export default function AdminDashboard() {
     };
     checkAuth();
   }, [router]);
-
-  if (!user) {
-    return (
-      <div className="flex min-h-screen bg-brand-surface items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
-      </div>
-    );
-  }
 
   // Handle Tag Input
   const handleTagKeyDown = (e: React.KeyboardEvent) => {
@@ -275,16 +267,34 @@ export default function AdminDashboard() {
   };
 
   // Queue Approval
-  const handleApproveQueue = (id: string) => {
-    setImages(images.map((img) => (img.id === id ? { ...img, status: "approved" } : img)));
+  const handleApproveQueue = async (id: string) => {
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase.from('images').update({ status: 'approved', is_published: true }).eq('id', id);
+      if (error) {
+        console.error("Error approving:", error);
+        alert("Failed to approve visual. Please try again.");
+        return;
+      }
+    }
+    setImages(images.map((img) => (img.id === id ? { ...img, status: "approved", is_published: true } : img)));
     alert("Visual approved and published live!");
   };
 
   // Queue Rejection
-  const handleRejectQueueSubmit = (e: React.FormEvent) => {
+  const handleRejectQueueSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rejectId || !rejectReason.trim()) return;
-    setImages(images.map((img) => (img.id === rejectId ? { ...img, status: "rejected" } : img)));
+
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase.from('images').update({ status: 'rejected', rejection_reason: rejectReason, is_published: false }).eq('id', rejectId);
+      if (error) {
+        console.error("Error rejecting:", error);
+        alert("Failed to reject visual. Please try again.");
+        return;
+      }
+    }
+
+    setImages(images.map((img) => (img.id === rejectId ? { ...img, status: "rejected", rejection_reason: rejectReason } : img)));
     setRejectId(null);
     setRejectReason("");
     alert("Visual rejected and returned to team contributor.");
@@ -317,11 +327,57 @@ export default function AdminDashboard() {
   };
 
   const pendingQueue = images.filter((img) => img.status === "pending_review");
+
+  const subjectStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    let totalDls = 0;
+    images.forEach((img) => {
+      const subj = img.image_tags?.find((t: any) => t.tag_type === 'subject')?.tag;
+      if (subj) {
+        counts[subj] = (counts[subj] || 0) + (img.download_count || 0);
+        totalDls += (img.download_count || 0);
+      }
+    });
+    return Object.entries(counts).map(([sub, count]) => ({
+      sub,
+      count,
+      percent: totalDls > 0 ? Math.round((count / totalDls) * 100) : 0
+    })).sort((a, b) => b.count - a.count).slice(0, 5);
+  }, [images]);
+
+  const gradeStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    let total = 0;
+    images.forEach((img) => {
+      const grade = img.image_tags?.find((t: any) => t.tag_type === 'grade')?.tag;
+      if (grade) {
+        counts[grade] = (counts[grade] || 0) + 1;
+        total += 1;
+      }
+    });
+    return Object.entries(counts).map(([grade, count]) => ({
+      grade,
+      count,
+      percent: total > 0 ? Math.round((count / total) * 100) : 0
+    })).sort((a, b) => b.count - a.count).slice(0, 5);
+  }, [images]);
   const filteredInventory = images.filter(
-    (img) =>
-      img.title.toLowerCase().includes(manageSearch.toLowerCase()) ||
-      img.subject.toLowerCase().includes(manageSearch.toLowerCase())
+    (img) => {
+      const subject = img.image_tags?.find((t: any) => t.tag_type === 'subject')?.tag || "";
+      return (
+        (img.title || "").toLowerCase().includes(manageSearch.toLowerCase()) ||
+        subject.toLowerCase().includes(manageSearch.toLowerCase())
+      );
+    }
   );
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen bg-brand-surface items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-brand-surface text-brand pt-14 md:pt-16 select-none">
@@ -342,12 +398,13 @@ export default function AdminDashboard() {
           <nav className="flex flex-col gap-1 text-xs font-bold">
             {[
               { id: "overview", label: "Overview Feed", icon: LayoutDashboard },
-              { id: "upload", label: "Upload Images", icon: Upload },
-              { id: "manage", label: "Manage Inventory", icon: Layers },
               { id: "queue", label: `Review Queue (${pendingQueue.length})`, icon: Bell },
-              { id: "team", label: "Team Members", icon: Users },
-              { id: "partners", label: "Partners", icon: Users },
-              { id: "analytics", label: "Traffic Analytics", icon: BarChart3 },
+              ...(user.role === 'admin' ? [
+                { id: "manage", label: "Manage Inventory", icon: Layers },
+                { id: "team", label: "Team Members", icon: Users },
+                { id: "partners", label: "Partners", icon: Users },
+                { id: "analytics", label: "Traffic Analytics", icon: BarChart3 },
+              ] : [])
             ].map((tab) => {
               const TabIcon = tab.icon;
               const active = activeTab === tab.id;
@@ -389,6 +446,37 @@ export default function AdminDashboard() {
       {/* 2. MAIN ADMIN CONTENT */}
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full">
         
+        {/* Mobile Navigation Tabs */}
+        <div className="md:hidden overflow-x-auto pb-4 mb-4 flex gap-2 hide-scrollbar">
+          {[
+            { id: "overview", label: "Overview", icon: LayoutDashboard },
+            { id: "queue", label: `Queue (${pendingQueue.length})`, icon: Bell },
+            ...(user.role === 'admin' ? [
+              { id: "manage", label: "Manage", icon: Layers },
+              { id: "team", label: "Team", icon: Users },
+              { id: "partners", label: "Partners", icon: Users },
+              { id: "analytics", label: "Analytics", icon: BarChart3 },
+            ] : [])
+          ].map((tab) => {
+            const TabIcon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => tab.id === 'upload' ? router.push('/upload') : setActiveTab(tab.id as any)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-[10px] whitespace-nowrap flex-shrink-0 transition-colors ${
+                  active
+                    ? "bg-brand text-white shadow-sm"
+                    : "bg-white border border-brand-border text-[rgba(0,57,60,0.7)] hover:bg-[#f3f3f3]"
+                }`}
+              >
+                <TabIcon className="w-3.5 h-3.5" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+        
         {/* ================= OVERVIEW TAB ================= */}
         {activeTab === "overview" && (
           <div className="flex flex-col gap-8 animate-in fade-in duration-200">
@@ -397,7 +485,7 @@ export default function AdminDashboard() {
                 Overview Dashboard
               </h1>
               <p className="text-xs text-brand-muted font-semibold mt-1">
-                EduVisuals.lk real-time system metrics.
+                EduVisuals real-time system metrics.
               </p>
             </div>
 
@@ -558,7 +646,7 @@ export default function AdminDashboard() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Visual Title *</label>
                   <input value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)}
-                    placeholder="e.g. Plant Cell Structure Diagram — O/L Biology"
+                    placeholder="e.g. Plant Cell Structure Diagram — High School Biology"
                     className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none focus:border-brand transition-all" />
                 </div>
                 
@@ -846,7 +934,7 @@ export default function AdminDashboard() {
                           {item.title}
                         </span>
                         <span className="text-[10px] text-brand-faint font-semibold mt-0.5">
-                          Subject: {item.subject} · Grade: {item.grade} · Submitter: creator@eduvisuals.lk
+                          Subject: {item.subject} · Grade: {item.grade} · Submitter: creator@eduvisuals.com
                         </span>
                       </div>
                     </div>
@@ -987,7 +1075,7 @@ export default function AdminDashboard() {
                     <input
                       type="email"
                       required
-                      placeholder="creator@eduvisuals.lk"
+                      placeholder="creator@eduvisuals.com"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       className="w-full bg-[#f3f3f3] border border-brand-border text-brand placeholder:text-[rgba(0,57,60,0.5)] px-3.5 py-3 rounded-xl outline-none focus:border-brand transition-all"
@@ -1109,12 +1197,7 @@ export default function AdminDashboard() {
                   Downloads Distribution by Subject
                 </h3>
                 <div className="flex flex-col gap-3 text-xs font-semibold">
-                  {[
-                    { sub: "Biology", percent: 45, count: 5600 },
-                    { sub: "History", percent: 25, count: 3100 },
-                    { sub: "Chemistry", percent: 15, count: 1870 },
-                    { sub: "Physics", percent: 15, count: 1870 },
-                  ].map((x) => (
+                  {subjectStats.map((x) => (
                     <div key={x.sub} className="flex flex-col gap-1">
                       <div className="flex justify-between font-bold text-brand">
                         <span>{x.sub}</span>
@@ -1125,6 +1208,7 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   ))}
+                  {subjectStats.length === 0 && <div className="text-brand-muted py-4">No data available</div>}
                 </div>
               </div>
 
@@ -1134,11 +1218,7 @@ export default function AdminDashboard() {
                   Traffic distribution by Grade Level
                 </h3>
                 <div className="flex flex-col gap-3 text-xs font-semibold">
-                  {[
-                    { grade: "Ordinary Level (OL)", percent: 55, count: 6840 },
-                    { grade: "Advanced Level (AL)", percent: 35, count: 4350 },
-                    { grade: "Grade 6-9", percent: 10, count: 1250 },
-                  ].map((x) => (
+                  {gradeStats.map((x) => (
                     <div key={x.grade} className="flex flex-col gap-1">
                       <div className="flex justify-between font-bold text-brand">
                         <span>{x.grade}</span>
@@ -1149,6 +1229,7 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   ))}
+                  {gradeStats.length === 0 && <div className="text-brand-muted py-4">No data available</div>}
                 </div>
               </div>
             </div>

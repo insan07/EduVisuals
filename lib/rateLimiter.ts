@@ -1,4 +1,4 @@
-// In-memory Sliding Window Rate Limiter for EduVisuals.lk
+// In-memory Sliding Window Rate Limiter for EduVisuals
 
 interface RateLimitConfig {
   limit: number;       // Max requests

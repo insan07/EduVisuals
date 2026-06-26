@@ -1,4 +1,4 @@
-// Service Worker for EduVisuals.lk
+// Service Worker for EduVisuals
 const CACHE_NAME = "eduvisuals-static-v1";
 const OFFLINE_URL = "/offline";
 

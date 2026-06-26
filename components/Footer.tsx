@@ -6,7 +6,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#073238] text-white py-12 px-4 sm:px-6 lg:px-8 mt-auto">
+    <footer className="bg-brand text-white py-12 px-4 sm:px-6 lg:px-8 mt-auto">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
         
         {/* Left Section: Logo, Tagline & Flag */}
@@ -34,12 +34,8 @@ export default function Footer() {
             </span>
           </Link>
           <p className="text-white/70 text-sm font-normal leading-relaxed">
-            Sri Lanka&apos;s Educational Visual Library. High-quality, curriculum-aligned visuals for premium educational experiences.
+            The Premier Educational Visual Library. High-quality, curriculum-aligned visuals for premium educational experiences.
           </p>
-          <div className="flex items-center gap-1.5 text-xs text-white/70 mt-1 font-semibold">
-            <span>Made in Sri Lanka</span>
-            <span role="img" aria-label="Sri Lanka Flag">🇱🇰</span>
-          </div>
         </div>
 
         {/* Right Section: Links */}

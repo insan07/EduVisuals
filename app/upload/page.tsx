@@ -8,6 +8,7 @@ import {
   Sparkles,
   FileImage,
   ChevronRight,
+  ChevronDown,
   Shield,
   CheckCircle,
   Clock,
@@ -18,14 +19,36 @@ import {
   Download,
   Crown,
   Plus,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
-const SUBJECTS = ["Biology", "Chemistry", "Physics", "Mathematics", "History", "Geography", "ICT", "Commerce", "Art"];
-const GRADES = ["Grade 1-5", "Grade 6-9", "OL", "AL", "University"];
-const TYPES = ["Diagram", "Mind Map", "Illustration", "Flowchart", "Timeline", "Graph", "Table", "Cheat Sheet"];
-const SYLLABUSES = ["National Syllabus", "Cambridge", "Edexcel", "Local University"];
-const MEDIUMS = ["English Medium", "Sinhala Medium", "Tamil Medium"];
+const SUBJECTS: (string | { group: string; options: string[] })[] = [
+  { group: "Sciences", options: ["Physics", "Chemistry", "Biology", "Environmental Science"] },
+  "Mathematics & Statistics",
+  { group: "Engineering", options: ["Mechanical Engineering", "Electrical Engineering", "Civil Engineering", "Computer/Software Engineering", "Chemical Engineering", "Electronics"] },
+  { group: "Computer Science / IT", options: ["Programming", "AI/ML", "Cybersecurity", "Data Science"] },
+  "Medicine & Health Sciences",
+  "Business, Economics & Finance",
+  "Law",
+  { group: "Arts & Humanities", options: ["History", "Literature", "Philosophy", "Languages"] },
+  { group: "Social Sciences", options: ["Psychology", "Sociology", "Political Science"] },
+  "Architecture & Design",
+  "Agriculture"
+];
+const GRADES = ["Pre-primary / Kindergarten", "Primary / Elementary", "Middle School", "High School", "O/L (Ordinary Level)", "A/L (Advanced Level)", "Undergraduate", "Postgraduate", "Doctoral / PhD", "Professional / Certifications"];
+const TYPES = ["Mind Map", "Diagram", "Graph", "Flowchart", "Timeline", "Illustration", "Comparison Table", "Cheat Sheet"];
+const SYLLABUSES: (string | { group: string; options: string[] })[] = [
+  { group: "International", options: ["IB Diploma", "Cambridge IGCSE", "Cambridge A-Level", "Edexcel/Pearson"] },
+  { group: "US", options: ["Common Core", "AP (Advanced Placement)", "State Standards"] },
+  { group: "UK", options: ["National Curriculum", "AQA", "OCR"] },
+  { group: "India", options: ["CBSE", "ICSE", "State Boards"] },
+  { group: "Sri Lanka", options: ["National Syllabus", "Local University"] },
+  "National Curriculum (Other)",
+  { group: "Exam-Prep", options: ["SAT", "GRE", "GMAT", "JEE", "NEET", "IELTS"] }
+];
+const MEDIUMS = ["English", "Sinhala", "Tamil", "Mandarin Chinese", "Spanish", "Hindi", "Arabic", "French", "Portuguese", "Russian", "Bengali", "German", "Japanese", "Indonesian/Malay", "Urdu", "Other"];
 
 type UploadStatus = "pending_review" | "approved" | "rejected" | "draft";
 
@@ -38,6 +61,7 @@ interface MyUpload {
   download_count: number;
   rejection_reason: string | null;
   thumbnail_url: string | null;
+  description: string | null;
 }
 
 interface UploadMetadata {
@@ -150,11 +174,11 @@ export default function ContributorUploadPortal() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [subject, setSubject] = useState("Biology");
-  const [selectedGrades, setSelectedGrades] = useState<string[]>(["OL"]);
-  const [type, setType] = useState("Diagram");
-  const [syllabus, setSyllabus] = useState("National Syllabus");
-  const [medium, setMedium] = useState("English Medium");
+  const [subject, setSubject] = useState("");
+  const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
+  const [type, setType] = useState("");
+  const [syllabus, setSyllabus] = useState("");
+  const [medium, setMedium] = useState("");
   const [isPremium, setIsPremium] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -175,6 +199,12 @@ export default function ContributorUploadPortal() {
   const [myUploads, setMyUploads] = useState<MyUpload[]>([]);
   const [loadingUploads, setLoadingUploads] = useState(true);
   const [activeView, setActiveView] = useState<"upload" | "my-uploads">("upload");
+
+  // Edit states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUploadId, setEditingUploadId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
 
   // Auth check — must be logged in with correct role
   useEffect(() => {
@@ -208,7 +238,7 @@ export default function ContributorUploadPortal() {
       if (isSupabaseConfigured() && userId !== "sandbox-user") {
         const { data, error } = await supabase
           .from("images")
-          .select("id, title, created_at, status, view_count, download_count, rejection_reason, thumbnail_url")
+          .select("id, title, description, created_at, status, view_count, download_count, rejection_reason, thumbnail_url")
           .eq("uploaded_by", userId)
           .order("created_at", { ascending: false });
 
@@ -218,9 +248,9 @@ export default function ContributorUploadPortal() {
       } else {
         // Mock data for sandbox
         setMyUploads([
-          { id: "u1", title: "Human Respiratory System", created_at: "2026-06-22", status: "pending_review", view_count: 0, download_count: 0, rejection_reason: null, thumbnail_url: null },
-          { id: "u2", title: "Carbon Cycle Flowchart", created_at: "2026-06-20", status: "approved", view_count: 240, download_count: 48, rejection_reason: null, thumbnail_url: null },
-          { id: "u3", title: "Water Cycle Diagram v1", created_at: "2026-06-18", status: "rejected", view_count: 0, download_count: 0, rejection_reason: "Labeling text has spelling errors on 'Condensation' and lines overlap.", thumbnail_url: null },
+          { id: "u1", title: "Human Respiratory System", description: null, created_at: "2026-06-22", status: "pending_review", view_count: 0, download_count: 0, rejection_reason: null, thumbnail_url: null },
+          { id: "u2", title: "Carbon Cycle Flowchart", description: null, created_at: "2026-06-20", status: "approved", view_count: 240, download_count: 48, rejection_reason: null, thumbnail_url: null },
+          { id: "u3", title: "Water Cycle Diagram v1", description: null, created_at: "2026-06-18", status: "rejected", view_count: 0, download_count: 0, rejection_reason: "Labeling text has spelling errors on 'Condensation' and lines overlap.", thumbnail_url: null },
         ]);
       }
 
@@ -229,6 +259,44 @@ export default function ContributorUploadPortal() {
 
     if (!authLoading) loadMyUploads();
   }, [userId, authLoading]);
+
+  const handleDeleteUpload = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this visual?")) return;
+    try {
+      const { error } = await supabase.from("images").delete().eq("id", id);
+      if (error) throw error;
+      setMyUploads((prev) => prev.filter((u) => u.id !== id));
+    } catch (err) {
+      alert("Error deleting visual.");
+    }
+  };
+
+  const openEditModal = (upload: MyUpload) => {
+    setEditingUploadId(upload.id);
+    setEditTitle(upload.title || "");
+    setEditDescription(upload.description || "");
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUploadId) return;
+    try {
+      const { error } = await supabase
+        .from("images")
+        .update({ title: editTitle, description: editDescription })
+        .eq("id", editingUploadId);
+      if (error) throw error;
+      setMyUploads((prev) =>
+        prev.map((u) =>
+          u.id === editingUploadId ? { ...u, title: editTitle, description: editDescription } : u
+        )
+      );
+      setIsEditModalOpen(false);
+    } catch (err) {
+      alert("Error updating visual.");
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, fileType: "main" | "thumb") => {
     const file = e.target.files?.[0];
@@ -442,35 +510,23 @@ export default function ContributorUploadPortal() {
                     </div>
 
                     {/* Subject */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Subject *</label>
-                      <select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none focus:border-brand transition-all">
-                        {SUBJECTS.map((s) => <option key={s}>{s}</option>)}
-                      </select>
+                    <div className="md:col-span-1">
+                      <CustomSelect label="Subject *" value={subject} onChange={setSubject} options={SUBJECTS} />
                     </div>
 
                     {/* Type */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Visual Type *</label>
-                      <select value={type} onChange={(e) => setType(e.target.value)} className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none focus:border-brand transition-all">
-                        {TYPES.map((t) => <option key={t}>{t}</option>)}
-                      </select>
+                    <div className="md:col-span-1">
+                      <CustomSelect label="Visual Type *" value={type} onChange={setType} options={TYPES} />
                     </div>
 
                     {/* Syllabus */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Syllabus</label>
-                      <select value={syllabus} onChange={(e) => setSyllabus(e.target.value)} className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none">
-                        {SYLLABUSES.map((s) => <option key={s}>{s}</option>)}
-                      </select>
+                    <div className="md:col-span-1">
+                      <CustomSelect label="Syllabus" value={syllabus} onChange={setSyllabus} options={SYLLABUSES} />
                     </div>
 
                     {/* Medium */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Medium</label>
-                      <select value={medium} onChange={(e) => setMedium(e.target.value)} className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none">
-                        {MEDIUMS.map((m) => <option key={m}>{m}</option>)}
-                      </select>
+                    <div className="md:col-span-1">
+                      <CustomSelect label="Medium" value={medium} onChange={setMedium} options={MEDIUMS} />
                     </div>
 
                     {/* Grades */}
@@ -754,6 +810,14 @@ export default function ContributorUploadPortal() {
                       <span className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${meta.color}`}>
                         {meta.icon}{meta.label}
                       </span>
+                      <div className="flex gap-1 ml-2">
+                        <button onClick={() => openEditModal(upload)} className="p-2 text-brand hover:bg-[#f3f3f3] rounded-full transition-colors" title="Edit">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteUpload(upload.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Delete">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -763,6 +827,155 @@ export default function ContributorUploadPortal() {
         )}
 
       </div>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-brand/40 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border bg-brand-surface">
+              <h2 className="text-lg font-black text-brand">Edit Visual</h2>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-brand-faint hover:text-brand">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="p-6 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold text-brand mb-1.5 uppercase tracking-wide">Title</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#f8f9fa] border border-brand-border rounded-xl focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all text-sm font-semibold text-brand placeholder:text-[rgba(0,57,60,0.3)]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-brand mb-1.5 uppercase tracking-wide">Description</label>
+                <textarea
+                  rows={4}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#f8f9fa] border border-brand-border rounded-xl focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all text-sm font-semibold text-brand placeholder:text-[rgba(0,57,60,0.3)] resize-none"
+                />
+              </div>
+              <div className="flex gap-3 justify-end mt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#f3f3f3] text-[rgba(0,57,60,0.7)] hover:bg-[#e8ecec] hover:text-brand transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl font-black text-sm bg-brand text-white shadow-sm hover:-translate-y-0.5 transition-all"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CustomSelect({ label, value, onChange, options }: { label: string, value: string, onChange: (v: string) => void, options: (string | {group: string; options: string[]})[] }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (isOpen && ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  const displayValue = isOpen ? search : value;
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setIsOpen(true);
+  };
+
+  const handleOptionClick = (opt: string) => {
+    onChange(opt);
+    setIsOpen(false);
+    setSearch("");
+  };
+
+  const filteredOptions = options.map(opt => {
+    if (typeof opt === 'string') {
+      return opt.toLowerCase().includes(search.toLowerCase()) ? opt : null;
+    } else {
+      const filteredSub = opt.options.filter(sub => sub.toLowerCase().includes(search.toLowerCase()));
+      if (filteredSub.length > 0) return { ...opt, options: filteredSub };
+      if (opt.group.toLowerCase().includes(search.toLowerCase())) return opt;
+      return null;
+    }
+  }).filter(Boolean) as (string | {group: string; options: string[]})[];
+
+  return (
+    <div className="relative flex flex-col gap-1.5" ref={ref}>
+      <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">{label}</label>
+      <div className="relative w-full">
+        <input 
+          type="text"
+          value={displayValue}
+          onChange={handleInputChange}
+          onClick={() => setIsOpen(true)}
+          placeholder="Select or type..."
+          className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none focus:border-brand transition-all font-semibold pr-10"
+        />
+        <ChevronDown 
+          onClick={() => setIsOpen(!isOpen)}
+          className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 cursor-pointer transition-transform ${isOpen ? "rotate-180 text-brand" : "text-brand/50"}`} 
+        />
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50 flex flex-col max-h-64 animate-in fade-in slide-in-from-top-2 duration-200 overflow-y-auto pr-1">
+          {filteredOptions.length === 0 ? (
+            <div className="p-3 text-center text-xs text-brand-muted font-medium">No results found</div>
+          ) : filteredOptions.map((opt, idx) => {
+            if (typeof opt === 'string') {
+              return (
+                <div 
+                  key={opt}
+                  onClick={() => handleOptionClick(opt)}
+                  className={`p-2.5 text-xs rounded-lg cursor-pointer transition-colors ${value === opt ? "bg-[#073238] text-white font-bold" : "hover:bg-gray-50 text-gray-700"}`}
+                >
+                  {opt}
+                </div>
+              );
+            } else {
+              return (
+                <div key={opt.group} className={idx > 0 ? "mt-2 border-t border-gray-100 pt-2" : "mb-1"}>
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1 px-2.5">{opt.group}</div>
+                  <div className="flex flex-col gap-0.5">
+                    {opt.options.map((subOpt) => (
+                      <div 
+                        key={subOpt}
+                        onClick={() => handleOptionClick(subOpt)}
+                        className={`p-2.5 text-xs rounded-lg cursor-pointer transition-colors ${value === subOpt ? "bg-[#073238] text-white font-bold" : "hover:bg-gray-50 text-gray-700"}`}
+                      >
+                        {subOpt}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+          })}
+        </div>
+      )}
     </div>
   );
 }

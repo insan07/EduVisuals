@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Crown,
   Search,
   Menu,
   X,
   ArrowRight,
+  ArrowLeft,
   Home as HomeIcon,
   Download as DownloadIcon,
   Heart as HeartIcon,
@@ -39,6 +40,8 @@ interface NavUser {
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
+  const isDashboard = pathname === "/dashboard";
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -153,7 +156,7 @@ export default function Navbar() {
           isScrolled
             ? "bg-white/95 backdrop-blur-md border-b border-brand-border shadow-sm"
             : "bg-white border-b border-brand-border"
-        }`}
+        } ${isDashboard ? "hidden md:block" : ""}`}
       >
         {/* Height: 64px desktop (h-16), 56px mobile (h-14) */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 md:h-16 flex items-center justify-between">
@@ -250,7 +253,7 @@ export default function Navbar() {
 
             {/* User Profile (Mobile + Desktop) or Login/Signup (Desktop) */}
             {user ? (
-              <div className="relative flex items-center gap-3">
+              <div className={`relative flex items-center gap-3 ${isOpen ? 'hidden md:flex' : ''}`}>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -273,85 +276,8 @@ export default function Navbar() {
                   {/* Dropdown Menu / Mobile Bottom Sheet */}
                   {showProfileDropdown && (
                     <>
-                      {/* --- MOBILE ONLY BOTTOM SHEET --- */}
-                      <div className="md:hidden fixed inset-0 z-[100] flex flex-col justify-end">
-                        <div 
-                          className="absolute inset-0 bg-brand/40 backdrop-blur-sm transition-opacity" 
-                          onClick={() => setShowProfileDropdown(false)} 
-                        />
-                        <div className="relative w-full bg-white rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom-full duration-300 pb-8">
-                          <div className="w-12 h-1.5 bg-brand-border rounded-full mx-auto my-3" />
-                          <div className="px-6 py-4 border-b border-brand-border">
-                            <span className="font-black text-lg block text-brand">{user.name}</span>
-                            <span className="text-xs uppercase tracking-wide text-brand-muted font-bold mt-1">{user.displayRole} · {user.tier} Tier</span>
-                          </div>
-                          
-                          <div className="py-2 px-4 flex flex-col gap-1 max-h-[60vh] overflow-y-auto">
-                            {[
-                              { label: "Overview Dashboard", tab: "overview", icon: HomeIcon },
-                              { label: "My Downloads", tab: "downloads", icon: DownloadIcon },
-                              { label: "Saved Collections", tab: "collections", icon: HeartIcon },
-                              { label: "Subscription Billing", tab: "subscription", icon: StarIcon },
-                              { label: "Account Settings", tab: "settings", icon: SettingsIcon },
-                            ].map((item) => (
-                              <Link
-                                key={item.tab}
-                                href={`/dashboard?tab=${item.tab}`}
-                                onClick={() => {
-                                  setShowProfileDropdown(false);
-                                  setTimeout(() => {
-                                    window.dispatchEvent(new Event("dashboard-tab-changed"));
-                                  }, 50);
-                                }}
-                                className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#f3f3f3] rounded-xl text-brand transition-colors"
-                              >
-                                <item.icon className="w-5 h-5 text-brand-muted" />
-                                <span className="font-bold text-[rgba(0,57,60,0.85)]">{item.label}</span>
-                              </Link>
-                            ))}
-
-                            {/* Creator or Admin actions */}
-                            {(user.role === "admin" || user.role === "moderator" || user.role === "team_creator") && (
-                              <div className="border-t border-brand-border mt-2 pt-2 flex flex-col gap-1">
-                                {(user.role === "admin" || user.role === "moderator") && (
-                                  <Link
-                                    href="/admin"
-                                    onClick={() => setShowProfileDropdown(false)}
-                                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#f3f3f3] rounded-xl text-brand transition-colors"
-                                  >
-                                    <ShieldIcon className="w-5 h-5 text-brand-muted" />
-                                    <span className="font-bold text-[rgba(0,57,60,0.85)]">Admin Panel</span>
-                                  </Link>
-                                )}
-                                <Link
-                                  href="/upload"
-                                  onClick={() => setShowProfileDropdown(false)}
-                                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#f3f3f3] rounded-xl text-brand transition-colors"
-                                >
-                                  <UploadIcon className="w-5 h-5 text-brand-muted" />
-                                  <span className="font-bold text-[rgba(0,57,60,0.85)]">Upload Portal</span>
-                                </Link>
-                              </div>
-                            )}
-
-                            <div className="border-t border-brand-border mt-2 pt-2">
-                              <button
-                                onClick={() => {
-                                  setShowProfileDropdown(false);
-                                  handleSignOut();
-                                }}
-                                className="w-full text-left flex items-center gap-3 px-4 py-3.5 hover:bg-red-50 text-red-600 hover:text-red-700 rounded-xl transition-colors cursor-pointer"
-                              >
-                                <LogOutIcon className="w-5 h-5" />
-                                <span className="font-bold">Sign Out</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* --- DESKTOP ONLY DROPDOWN --- */}
-                      <div className="hidden md:block absolute top-[calc(100%+12px)] right-0 md:-right-2 w-64 bg-white border border-brand-border rounded-2xl shadow-2xl py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200 text-xs font-semibold text-brand">
+                      {/* --- PROFILE DROPDOWN (ALL DEVICES) --- */}
+                      <div className="absolute top-[calc(100%+12px)] -right-[48px] sm:-right-2 md:-right-2 w-64 bg-white border border-brand-border rounded-2xl shadow-2xl py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200 text-xs font-semibold text-brand">
                         <div className="px-4 py-2.5 border-b border-brand-border flex flex-col select-none">
                           <span className="font-black truncate">{user.name}</span>
                           <span className="text-[9px] uppercase tracking-wide text-[rgba(0,57,60,0.5)] font-bold mt-0.5">{user.displayRole} · {user.tier} Tier</span>
@@ -522,6 +448,13 @@ export default function Navbar() {
               >
                 Pricing
               </Link>
+              <Link
+                href="/partner"
+                onClick={toggleMenu}
+                className="flex items-center gap-1.5 text-[rgba(0,57,60,0.85)] text-base font-extrabold hover:text-brand transition-colors"
+              >
+                <StarIcon className="w-4.5 h-4.5" /> Become a Partner
+              </Link>
             </nav>
 
 
@@ -553,6 +486,17 @@ export default function Navbar() {
             </div>
           )}
         </div>
+      )}      {/* Mobile Dashboard Header (Back Button) */}
+      {isDashboard && (
+        <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-brand-border flex items-center px-4 z-50 shadow-sm">
+          <button 
+            onClick={() => router.back()} 
+            className="flex items-center gap-2 text-brand font-bold hover:bg-[#f3f3f3] px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back
+          </button>
+        </header>
       )}
     </>
   );

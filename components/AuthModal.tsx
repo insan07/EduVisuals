@@ -218,7 +218,7 @@ export default function AuthModal() {
               Sign in to Download
             </h2>
             <p className="text-xs text-brand-muted font-semibold mt-1">
-              Join 50,000+ Sri Lankan students. It&apos;s free.
+              Join 50,000+ Global students. It&apos;s free.
             </p>
             {intendedDownload && (
               <span className="text-[10px] text-brand font-black bg-[#f3f3f3] border border-brand-border px-2 py-0.5 rounded-full mt-2 flex items-center gap-1.5">

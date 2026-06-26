@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect, use } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { downloadWithWatermark } from "@/lib/watermark";
+import { formatDistanceToNow } from "date-fns";
 import { useAuthModal } from "@/store/useAuthModal";
+import { useCollectionModal } from "@/store/useCollectionModal";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import {
   Crown,
@@ -24,6 +28,8 @@ import {
   MoreHorizontal,
   Flag,
   X,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 
 interface PageProps {
@@ -34,12 +40,25 @@ export default function ImageDetailPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const currentId = resolvedParams.id;
 
+  const authModal = useAuthModal();
+  const collectionModal = useCollectionModal();
+
   // Real data state
   const [visual, setVisual] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isNotFound, setIsNotFound] = useState(false);
   
   const [userState, setUserState] = useState<"guest" | "free" | "premium">("guest");
+  const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
+  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  
+  // Report Modal State
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
   
   const [isLiked, setIsLiked] = useState(false);
   const [copyStatus, setCopyStatus] = useState("Copy Link");
@@ -67,11 +86,12 @@ export default function ImageDetailPage({ params }: PageProps) {
       } else {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("tier")
+          .select("tier, role")
           .eq("id", session.user.id)
           .single();
         if (profile?.tier === "Premium") setUserState("premium");
         else setUserState("free");
+        setCurrentUser({ id: session.user.id, role: profile?.role });
       }
 
       // 2. Fetch image
@@ -108,6 +128,8 @@ export default function ImageDetailPage({ params }: PageProps) {
       };
 
       setVisual(mappedImage);
+      setEditTitle(mappedImage.title || "");
+      setEditDescription(mappedImage.description || "");
       setIsLoading(false);
 
       // 3. Increment view count
@@ -126,6 +148,34 @@ export default function ImageDetailPage({ params }: PageProps) {
     }
     loadData();
   }, [currentId]);
+
+  const handleDeleteVisual = async () => {
+    if (!confirm("Are you sure you want to delete this visual? This action cannot be undone.")) return;
+    try {
+      const { error } = await supabase.from("images").delete().eq("id", currentId);
+      if (error) throw error;
+      alert("Visual deleted successfully.");
+      window.location.href = "/visuals";
+    } catch (err) {
+      alert("Error deleting visual.");
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase
+        .from("images")
+        .update({ title: editTitle, description: editDescription })
+        .eq("id", currentId);
+      if (error) throw error;
+      setVisual({ ...visual, title: editTitle, description: editDescription });
+      setIsEditModalOpen(false);
+      triggerToast("Visual updated successfully!");
+    } catch (err) {
+      alert("Error updating visual.");
+    }
+  };
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
@@ -167,6 +217,16 @@ export default function ImageDetailPage({ params }: PageProps) {
       if (result.limitReached) { alert("Daily limit reached (5/day). Upgrade to Premium!"); return; }
       
       if (result.downloadUrl) {
+        if (!result.isPremiumUser) {
+          try {
+            await downloadWithWatermark(result.downloadUrl, visual.title || "eduvisuals-download");
+            triggerToast("Download started!");
+            return;
+          } catch (e) {
+            console.error("Watermark failed, falling back", e);
+          }
+        }
+        
         const urlToDownload = result.downloadUrl.includes('?') 
           ? `${result.downloadUrl}&download=` 
           : `${result.downloadUrl}?download=`;
@@ -235,27 +295,61 @@ export default function ImageDetailPage({ params }: PageProps) {
   const RelatedCard = ({ item }: { item: any }) => (
     <Link
       href={`/image/${item.id}`}
-      className="group flex-shrink-0 w-52 snap-start rounded-xl overflow-hidden bg-white border border-brand-border hover:border-brand-border transition-all duration-300 shadow-sm hover:shadow-md flex flex-col"
+      className="group block relative w-full rounded-2xl overflow-hidden cursor-pointer"
+      style={{ background: "linear-gradient(135deg, #e8f5f6, #d0ecee)" }}
     >
-      <div className="h-32 w-full bg-gradient-to-tr from-[#e8ecec] to-[#ffffff] flex items-center justify-center relative select-none">
-        {item.thumbnailUrl ? (
-          <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
-        ) : (
-          <FileImage size={32} className="text-brand-faint opacity-50" />
-        )}
-        {item.isPremium && (
-          <span className="absolute top-2 left-2 text-[8px] font-black px-1.5 py-0.5 rounded border border-amber-500/20 bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-sm flex items-center gap-1">
-            <Crown size={10} /> Premium
-          </span>
-        )}
-      </div>
-      <div className="p-3 bg-white flex-1 flex flex-col justify-between">
-        <h4 className="text-xs font-bold text-brand group-hover:text-brand transition-colors line-clamp-2 leading-snug">
-          {item.title}
-        </h4>
-        <div className="flex justify-between items-center mt-2 pt-2 border-t border-brand-border text-[9px] font-semibold text-brand-faint">
-          <span>{item.subject}</span>
-          <span className="bg-[#f3f3f3] text-brand border border-brand-border px-1.5 py-0.5 rounded text-[8px]">{item.grade}</span>
+      {item.thumbnailUrl || item.file_url ? (
+        <img 
+          src={item.thumbnailUrl || item.file_url} 
+          alt={item.title}
+          onContextMenu={(e) => e.preventDefault()}
+          onDragStart={(e) => e.preventDefault()}
+          draggable={false} 
+          className="w-full h-auto max-h-[300px] sm:max-h-[400px] block object-cover object-top" 
+        />
+      ) : (
+        <div className="w-full aspect-video flex items-center justify-center">
+          <FileImage size={40} style={{ color: "rgba(7,50,56,0.25)" }} />
+        </div>
+      )}
+
+      {item.isPremium && (
+        <div className="absolute top-3 left-3 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-md px-2 py-1 text-xs font-bold flex items-center gap-1 z-10 shadow-sm">
+          <Crown size={12} /> Premium
+        </div>
+      )}
+
+      {/* Overlay (Hover only, hidden on mobile) */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 hidden md:flex flex-col justify-between bg-black/40">
+        <div className="relative z-10 flex justify-end p-3 pointer-events-auto">
+          <div className="flex gap-2">
+            <button 
+              onClick={(e) => { e.preventDefault(); collectionModal.open(item.id, item.title); }}
+              className="bg-white/90 hover:bg-white text-gray-700 p-2 rounded-lg backdrop-blur-sm transition-colors shadow-sm"
+            >
+              <Heart size={16} fill="none" stroke="currentColor" />
+            </button>
+            <button className="bg-white/90 hover:bg-white text-gray-700 p-2 rounded-lg backdrop-blur-sm transition-colors shadow-sm flex items-center justify-center">
+              <Download size={16} />
+            </button>
+          </div>
+        </div>
+        <div className="relative z-10 p-4 pointer-events-auto mt-auto">
+          <h3 className="text-white font-medium text-sm sm:text-base line-clamp-2 mb-2 leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+            {item.title}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {item.subject && (
+              <span className="bg-black/30 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded text-[10px] sm:text-xs font-medium">
+                {item.subject}
+              </span>
+            )}
+            {item.grade && (
+              <span className="bg-black/30 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded text-[10px] sm:text-xs font-medium">
+                {item.grade}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </Link>
@@ -296,9 +390,9 @@ export default function ImageDetailPage({ params }: PageProps) {
                 <div className="absolute inset-0 z-10 opacity-[0.05] pointer-events-none flex flex-col justify-around select-none text-brand uppercase font-black text-center text-xs tracking-[0.2em] leading-none rotate-[-25deg]">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="flex justify-around gap-4 whitespace-nowrap">
-                      <span>EduVisuals.lk</span>
-                      <span>EduVisuals.lk</span>
-                      <span>EduVisuals.lk</span>
+                      <span>EduVisuals</span>
+                      <span>EduVisuals</span>
+                      <span>EduVisuals</span>
                     </div>
                   ))}
                 </div>
@@ -309,6 +403,9 @@ export default function ImageDetailPage({ params }: PageProps) {
                 <img 
                   src={visual.thumbnail_url || visual.file_url} 
                   alt={visual.title} 
+                  onContextMenu={(e) => e.preventDefault()}
+                  onDragStart={(e) => e.preventDefault()}
+                  draggable={false} 
                   className="w-full h-full object-contain pointer-events-none drop-shadow-md rounded-2xl md:rounded-none" 
                   onError={(e) => {
                     const target = e.currentTarget;
@@ -321,11 +418,6 @@ export default function ImageDetailPage({ params }: PageProps) {
                 <FileImage size={80} className="text-brand-faint" />
               )}
 
-              {/* Bottom protection note */}
-              <div className="absolute bottom-4 left-4 z-20 px-3 py-1 bg-[#f3f3f3]/90 text-brand/85 rounded text-[10px] border border-brand-border backdrop-blur-sm pointer-events-none select-none">
-                © EduVisuals.lk · Protected Content
-              </div>
-
               {/* Premium badge on image */}
               {visual.is_premium && (
                 <div className="absolute top-4 left-4 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-md px-2.5 py-1.5 text-xs font-bold flex items-center gap-1 z-20 shadow-sm pointer-events-none select-none">
@@ -335,19 +427,13 @@ export default function ImageDetailPage({ params }: PageProps) {
             </div>
 
             {/* Sub-preview utilities */}
-            <div className="flex justify-between items-center px-2">
-              <span className="text-xs text-brand-faint font-medium flex items-center gap-1.5 select-none">
-                <Info className="w-3.5 h-3.5 text-brand" />
-                Image protected to prevent hotlinking.
-              </span>
+            <div className="flex justify-end items-center px-2">
               <button 
-                onClick={() => setIsLiked(!isLiked)}
-                className={`flex items-center gap-1 text-xs font-bold transition-all ${
-                  isLiked ? "text-red-500" : "text-brand hover:text-red-500"
-                }`}
+                onClick={() => collectionModal.open(visual.id, visual.title)}
+                className={`flex items-center gap-1 text-xs font-bold transition-all text-brand hover:text-red-500`}
               >
-                <Heart className={`w-4 h-4 ${isLiked ? "fill-red-500" : ""}`} />
-                {isLiked ? "Saved to Favorites" : "Save Visual"}
+                <Heart className="w-4 h-4" />
+                Save Visual
               </button>
             </div>
           </div>
@@ -382,7 +468,7 @@ export default function ImageDetailPage({ params }: PageProps) {
                       </button>
                       <a 
                         href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                          `Check out this educational visual aid: ${visual.title} - https://eduvisuals.lk/image/${visual.id}`
+                          `Check out this educational visual aid: ${visual.title} - https://eduvisuals.com/image/${visual.id}`
                         )}`}
                         target="_blank" rel="noopener noreferrer"
                         className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
@@ -391,7 +477,7 @@ export default function ImageDetailPage({ params }: PageProps) {
                       </a>
                       <a 
                         href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                          `https://eduvisuals.lk/image/${visual.id}`
+                          `https://eduvisuals.com/image/${visual.id}`
                         )}`}
                         target="_blank" rel="noopener noreferrer"
                         className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
@@ -399,8 +485,29 @@ export default function ImageDetailPage({ params }: PageProps) {
                         <Share2 className="w-3.5 h-3.5" /> Share on Facebook
                       </a>
                       <div className="h-px bg-brand-border my-1 w-full" />
+                      
+                      {currentUser && (currentUser.id === visual.uploaded_by || currentUser.role === 'admin' || currentUser.role === 'moderator') && (
+                        <>
+                          <button 
+                            onClick={() => { setIsEditModalOpen(true); setIsDropdownOpen(false); }}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" /> Edit Visual
+                          </button>
+                          <button 
+                            onClick={() => { handleDeleteVisual(); setIsDropdownOpen(false); }}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors w-full text-left"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Delete Visual
+                          </button>
+                        </>
+                      )}
+                      
                       <button 
-                        onClick={() => { triggerToast("Report modal opened"); setIsDropdownOpen(false); }}
+                        onClick={() => { 
+                          setIsReportModalOpen(true);
+                          setIsDropdownOpen(false); 
+                        }}
                         className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors w-full text-left"
                       >
                         <Flag className="w-3.5 h-3.5" /> Report Issue
@@ -533,9 +640,11 @@ export default function ImageDetailPage({ params }: PageProps) {
                 <Sparkles className="w-5 h-5 text-brand" />
                 More from {visual.subject}
               </h3>
-              <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-none snap-x">
+              <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-4 space-y-3 md:space-y-4 pb-4">
                 {relatedVisuals.map((item) => (
-                  <RelatedCard key={item.id} item={item} />
+                  <div key={item.id} className="break-inside-avoid">
+                    <RelatedCard item={item} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -546,15 +655,7 @@ export default function ImageDetailPage({ params }: PageProps) {
       </div>
 
       {/* ================= MOBILE FLOATING STICKY DOWNLOAD BAR ================= */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-brand-border p-3 flex items-center justify-between gap-3 shadow-[0_-4px_16px_rgba(0,57,60,0.06)] md:hidden">
-        <div className="flex flex-col">
-          <span className="text-[10px] font-black uppercase text-brand-muted leading-none">
-            {visual.subject}
-          </span>
-          <span className="text-xs font-extrabold text-brand line-clamp-1 mt-0.5 max-w-[150px]">
-            {visual.title}
-          </span>
-        </div>
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-brand-border p-3 flex items-center justify-center gap-3 shadow-[0_-4px_16px_rgba(0,57,60,0.06)] md:hidden">
 
         {userState === "guest" && (
           <button 
@@ -592,6 +693,121 @@ export default function ImageDetailPage({ params }: PageProps) {
         <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-brand border border-brand-border text-white font-bold text-xs px-5 py-3 rounded-full shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom duration-300">
           <Info className="w-4 h-4 text-white" />
           {toastMessage}
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-brand/40 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border bg-brand-surface">
+              <h2 className="text-lg font-black text-brand">Edit Visual</h2>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-brand-faint hover:text-brand">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="p-6 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold text-brand mb-1.5 uppercase tracking-wide">Title</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#f8f9fa] border border-brand-border rounded-xl focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all text-sm font-semibold text-brand placeholder:text-[rgba(0,57,60,0.3)]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-brand mb-1.5 uppercase tracking-wide">Description</label>
+                <textarea
+                  rows={4}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#f8f9fa] border border-brand-border rounded-xl focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all text-sm font-semibold text-brand placeholder:text-[rgba(0,57,60,0.3)] resize-none"
+                />
+              </div>
+              <div className="flex gap-3 justify-end mt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#f3f3f3] text-[rgba(0,57,60,0.7)] hover:bg-[#e8ecec] hover:text-brand transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl font-black text-sm bg-brand text-white shadow-sm hover:-translate-y-0.5 transition-all"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Report Modal */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden relative">
+            <button 
+              onClick={() => setIsReportModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            
+            <div className="p-8 text-center border-b border-gray-100">
+              <h2 className="text-3xl font-black text-gray-900 mb-2">Report content</h2>
+              <p className="text-gray-600 font-medium">Send your feedback and we'll use this information to improve.</p>
+            </div>
+            
+            <div className="p-8 space-y-6">
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-2">Why are you reporting this?</label>
+                <select 
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md py-3 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none bg-white"
+                >
+                  <option value="" disabled>Select an option</option>
+                  <option value="inaccurate">Inaccurate scientific/educational content</option>
+                  <option value="copyright">Copyright violation</option>
+                  <option value="inappropriate">Inappropriate or offensive content</option>
+                  <option value="spam">Spam or misleading</option>
+                  <option value="quality">Poor image quality</option>
+                  <option value="other">Other issue</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-2">Details (optional)</label>
+                <textarea 
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder="Which issue have you found? Be as specific as possible."
+                  rows={6}
+                  className="w-full border border-gray-300 rounded-md py-3 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
+                />
+              </div>
+            </div>
+            
+            <div className="p-6 bg-gray-50/50 flex justify-end border-t border-gray-100">
+              <button 
+                disabled={!reportReason}
+                onClick={() => {
+                  const body = `Reason: ${reportReason}\n\nDetails:\n${reportDetails}\n\n---\nImage ID: ${visual.id}\nTitle: ${visual.title}`;
+                  window.location.href = `mailto:MOHAMEDINSAN07@GMAIL.COM?subject=Report Issue: ${visual.title}&body=${encodeURIComponent(body)}`;
+                  setIsReportModalOpen(false);
+                  setReportReason("");
+                  setReportDetails("");
+                }}
+                className="bg-blue-500 disabled:bg-blue-300 hover:bg-blue-600 text-white font-semibold py-2.5 px-8 rounded-lg transition-colors"
+              >
+                Report
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
