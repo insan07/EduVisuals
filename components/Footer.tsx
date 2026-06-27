@@ -16,8 +16,8 @@ export default function Footer() {
               <div
                 style={{
                   backgroundColor: "#ffffff",
-                  maskImage: "url('/logo.png')",
-                  WebkitMaskImage: "url('/logo.png')",
+                  maskImage: "url('/logo.png?v=2')",
+                  WebkitMaskImage: "url('/logo.png?v=2')",
                   maskSize: "180%",
                   WebkitMaskSize: "180%",
                   maskRepeat: "no-repeat",
