@@ -41,7 +41,7 @@ export default function CollectionModal() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       close();
-      authModal.open(visualIdToSave || undefined); // prompt login
+      authModal.open("signin", visualIdToSave || undefined); // prompt login
       return;
     }
 

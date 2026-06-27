@@ -27,16 +27,14 @@ import {
   FileImage,
   ChevronRight,
   Shield,
-  X
+  X,
+  Check,
+  Eye
 } from "lucide-react";
 import { formatLKR, formatDownloadCount } from "@/lib/utils";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-
-const SUBJECTS = ["Biology","Chemistry","Physics","Mathematics","History","Geography","ICT","Commerce","Art"];
-const GRADES = ["Grade 1-5","Grade 6-9","OL","AL","University"];
-const TYPES = ["Diagram","Mind Map","Illustration","Flowchart","Timeline","Graph","Table","Cheat Sheet"];
-const SYLLABUSES = ["National Syllabus","Cambridge","Edexcel","Local University"];
-const MEDIUMS = ["English Medium","Sinhala Medium","Tamil Medium"];
+import { GRADES, SUBJECTS, TYPES, SYLLABUSES, MEDIUMS } from "@/lib/constants";
+import EditVisualModal from "@/components/EditVisualModal";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -81,11 +79,100 @@ export default function AdminDashboard() {
   // Manage content search
   const [manageSearch, setManageSearch] = useState("");
 
+  // Edit Image state
+  const [editingImageId, setEditingImageId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editGrade, setEditGrade] = useState("");
+  const [editSubject, setEditSubject] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editSyllabus, setEditSyllabus] = useState("");
+  const [editMedium, setEditMedium] = useState("");
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [editTagInput, setEditTagInput] = useState("");
+  const [editIsPremium, setEditIsPremium] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const handleOpenEdit = (img: any) => {
+    setEditingImageId(img.id);
+    setEditTitle(img.title || "");
+    setEditDescription(img.description || "");
+    setEditIsPremium(img.is_premium || false);
+
+    const tags = img.image_tags || [];
+    setEditGrade(tags.find((t: any) => t.tag_type === "grade")?.tag || "");
+    setEditSubject(tags.find((t: any) => t.tag_type === "subject")?.tag || "");
+    setEditType(tags.find((t: any) => t.tag_type === "type")?.tag || "");
+    setEditSyllabus(tags.find((t: any) => t.tag_type === "syllabus")?.tag || "");
+    setEditMedium(tags.find((t: any) => t.tag_type === "medium")?.tag || "");
+    
+    const customTags = tags
+      .filter((t: any) => t.tag_type === "custom")
+      .map((t: any) => t.tag);
+    setEditTags(customTags);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingImageId || !isSupabaseConfigured()) return;
+    setIsSavingEdit(true);
+    try {
+      // 1. Update images table
+      const { error: updateError } = await supabase
+        .from("images")
+        .update({
+          title: editTitle,
+          description: editDescription,
+          is_premium: editIsPremium
+        })
+        .eq("id", editingImageId);
+        
+      if (updateError) throw updateError;
+
+      // 2. Delete old tags
+      const { error: deleteError } = await supabase
+        .from("image_tags")
+        .delete()
+        .eq("image_id", editingImageId);
+        
+      if (deleteError) throw deleteError;
+
+      // 3. Insert new tags
+      const newTags = [];
+      if (editGrade) newTags.push({ image_id: editingImageId, tag_type: "grade", tag: editGrade });
+      if (editSubject) newTags.push({ image_id: editingImageId, tag_type: "subject", tag: editSubject });
+      if (editType) newTags.push({ image_id: editingImageId, tag_type: "type", tag: editType });
+      if (editSyllabus) newTags.push({ image_id: editingImageId, tag_type: "syllabus", tag: editSyllabus });
+      if (editMedium) newTags.push({ image_id: editingImageId, tag_type: "medium", tag: editMedium });
+      
+      editTags.forEach(tag => {
+        if (tag) newTags.push({ image_id: editingImageId, tag_type: "custom", tag });
+      });
+
+      if (newTags.length > 0) {
+        const { error: insertError } = await supabase
+          .from("image_tags")
+          .insert(newTags);
+        if (insertError) throw insertError;
+      }
+
+      // 4. Refresh images state locally
+      await loadImages();
+      
+      // Close modal
+      setEditingImageId(null);
+    } catch (e) {
+      console.error("Failed to save edit", e);
+      alert("Failed to save edits. Please try again.");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const loadImages = async () => {
     if (!isSupabaseConfigured()) return;
     const { data } = await supabase
       .from('images')
-      .select('id, title, status, is_premium, download_count, created_at, rejection_reason, uploaded_by, image_tags(tag, tag_type)')
+      .select('id, title, description, status, is_premium, download_count, created_at, rejection_reason, uploaded_by, image_tags(tag, tag_type)')
       .order('created_at', { ascending: false })
       .limit(1000);
     if (data) setImages(data);
@@ -361,12 +448,15 @@ export default function AdminDashboard() {
       percent: total > 0 ? Math.round((count / total) * 100) : 0
     })).sort((a, b) => b.count - a.count).slice(0, 5);
   }, [images]);
-  const filteredInventory = images.filter(
+  const filteredInventory = images.map((img) => ({
+    ...img,
+    subject: img.image_tags?.find((t: any) => t.tag_type === 'subject')?.tag || "N/A",
+    grade: img.image_tags?.find((t: any) => t.tag_type === 'grade')?.tag || "N/A",
+  })).filter(
     (img) => {
-      const subject = img.image_tags?.find((t: any) => t.tag_type === 'subject')?.tag || "";
       return (
         (img.title || "").toLowerCase().includes(manageSearch.toLowerCase()) ||
-        subject.toLowerCase().includes(manageSearch.toLowerCase())
+        img.subject.toLowerCase().includes(manageSearch.toLowerCase())
       );
     }
   );
@@ -561,264 +651,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ================= UPLOAD IMAGES TAB ================= */}
-        {activeTab === "upload" && (
-          <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-            <div>
-              <h1 className="text-xl md:text-2xl font-black text-brand">
-                Upload Visual Asset
-              </h1>
-              <p className="text-xs text-brand-muted font-semibold mt-1">
-                Inject high-resolution diagrams and study charts into the public visual library.
-              </p>
-            </div>
 
-            {/* Wizard progress bar */}
-            <div className="flex items-center gap-4 text-xs font-bold text-brand-faint">
-              <span className={uploadStep === 1 ? "text-brand font-black" : ""}>Step 1: File</span>
-              <ChevronRight className="w-4.5 h-4.5 text-[rgba(0,57,60,0.3)]" />
-              <span className={uploadStep === 2 ? "text-brand font-black" : ""}>Step 2: Metadata</span>
-              <ChevronRight className="w-4.5 h-4.5 text-[rgba(0,57,60,0.3)]" />
-              <span className={uploadStep === 3 ? "text-brand font-black" : ""}>Step 3: Publish</span>
-            </div>
-
-            {/* STEP 1 — File Drop Zone */}
-            {uploadStep === 1 && (
-              <div className="flex flex-col gap-6 p-6 md:p-8">
-                <div
-                  onClick={() => adminFileRef.current?.click()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const file = e.dataTransfer.files[0];
-                    if (file) {
-                      setSelectedFile(file);
-                      if (file.type.startsWith("image/")) setFilePreview(URL.createObjectURL(file));
-                    }
-                  }}
-                  onDragOver={(e) => e.preventDefault()}
-                  className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all ${
-                    selectedFile ? "border-brand bg-brand/5" : "border-brand-border hover:border-brand/50 hover:bg-[#f3f3f3]"
-                  }`}
-                >
-                  {filePreview ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <img src={filePreview} alt="Preview" className="max-h-52 mx-auto rounded-xl object-contain shadow" />
-                      <p className="text-xs font-bold text-brand">{selectedFile?.name}</p>
-                      <p className="text-[10px] text-brand-faint">{selectedFile ? (selectedFile.size/1024/1024).toFixed(2) : 0} MB</p>
-                      <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedFile(null); setFilePreview(null); }}
-                        className="text-[10px] text-red-500 font-bold hover:underline">Remove file</button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-3">
-                      <Upload className="w-14 h-14 text-brand/20" />
-                      <p className="text-base font-bold text-brand/60">Click to select or drag & drop image here</p>
-                      <p className="text-xs text-brand-faint">PNG · JPG · WebP · SVG — Maximum 20MB</p>
-                    </div>
-                  )}
-                </div>
-                <input
-                  ref={adminFileRef}
-                  type="file"
-                  accept=".png,.jpg,.jpeg,.webp,.svg"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    if (file.size > 20 * 1024 * 1024) { alert("File too large. Max 20MB."); return; }
-                    setSelectedFile(file);
-                    if (file.type.startsWith("image/")) setFilePreview(URL.createObjectURL(file));
-                  }}
-                />
-                <button
-                  onClick={() => selectedFile ? setUploadStep(2) : null}
-                  disabled={!selectedFile}
-                  className="w-full bg-brand text-white font-black text-xs py-3.5 rounded-xl disabled:opacity-40 transition-all"
-                >
-                  Continue to Image Details →
-                </button>
-              </div>
-            )}
-
-            {/* STEP 2 — Metadata */}
-            {uploadStep === 2 && (
-              <div className="p-6 md:p-8 flex flex-col gap-5">
-                {/* Title */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Visual Title *</label>
-                  <input value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)}
-                    placeholder="e.g. Plant Cell Structure Diagram — High School Biology"
-                    className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none focus:border-brand transition-all" />
-                </div>
-                
-                {/* Description */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Description * (for SEO)</label>
-                  <textarea value={uploadDesc} onChange={(e) => setUploadDesc(e.target.value)} rows={3}
-                    placeholder="Describe the diagram content, curriculum topics covered, and which students will benefit..."
-                    className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none focus:border-brand transition-all resize-none" />
-                </div>
-
-                {/* Alt Text */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Alt Text * (Google Image SEO)</label>
-                  <input value={uploadAltText} onChange={(e) => setUploadAltText(e.target.value)}
-                    placeholder="e.g. Plant cell diagram showing chloroplast, cell wall, and mitochondria for OL Biology"
-                    className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none focus:border-brand transition-all" />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Subject */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Subject *</label>
-                    <select value={uploadSubject} onChange={(e) => setUploadSubject(e.target.value)}
-                      className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none focus:border-brand">
-                      {SUBJECTS.map(s => <option key={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  {/* Visual Type */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Visual Type *</label>
-                    <select value={uploadType} onChange={(e) => setUploadType(e.target.value)}
-                      className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none focus:border-brand">
-                      {TYPES.map(t => <option key={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  {/* Syllabus */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Syllabus</label>
-                    <select value={uploadSyllabus} onChange={(e) => setUploadSyllabus(e.target.value)}
-                      className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none">
-                      {SYLLABUSES.map(s => <option key={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  {/* Medium */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Language Medium</label>
-                    <select value={uploadMedium} onChange={(e) => setUploadMedium(e.target.value)}
-                      className="w-full bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none">
-                      {MEDIUMS.map(m => <option key={m}>{m}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Grade Level */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Grade Level(s) *</label>
-                  <div className="flex flex-wrap gap-2">
-                    {GRADES.map(g => (
-                      <button key={g} type="button"
-                        onClick={() => setUploadGrade(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
-                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
-                          uploadGrade.includes(g) ? "bg-brand text-white border-brand" : "bg-[#f3f3f3] text-brand/70 border-brand-border hover:border-brand/40"
-                        }`}>
-                        {g}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Custom Tags */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Custom Tags (topic keywords)</label>
-                  <div className="flex gap-2">
-                    <input value={tagInput} onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={(e) => { if(e.key==="Enter"){e.preventDefault();const v=tagInput.trim();if(v&&!uploadTags.includes(v)&&uploadTags.length<10){setUploadTags([...uploadTags,v]);setTagInput("");}}}}
-                      placeholder="Type topic e.g. Photosynthesis, press Enter..."
-                      className="flex-1 bg-[#f3f3f3] border border-brand-border text-brand text-xs px-4 py-3 rounded-xl outline-none focus:border-brand" />
-                    <button type="button" onClick={() => {const v=tagInput.trim();if(v&&!uploadTags.includes(v)){setUploadTags([...uploadTags,v]);setTagInput("");}}}
-                      className="px-4 py-2 bg-brand text-white text-xs font-bold rounded-xl">Add</button>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {uploadTags.map(t => (
-                      <span key={t} className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#f3f3f3] border border-brand-border rounded-full text-[10px] font-bold text-brand">
-                        {t}
-                        <button type="button" onClick={() => setUploadTags(uploadTags.filter(x=>x!==t))}
-                          className="text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* AI Tag Suggest */}
-                <button type="button" onClick={handleAISuggestTags}
-                  className="w-full py-2.5 border border-brand-border text-brand font-bold text-xs rounded-xl hover:bg-[#f3f3f3] transition-all flex items-center justify-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5" /> Auto-suggest Tags from Subject & Title
-                </button>
-
-                {/* Premium toggle */}
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div onClick={() => setUploadIsPremium(!uploadIsPremium)}
-                    className={`relative w-10 h-5 rounded-full transition-all cursor-pointer ${uploadIsPremium ? "bg-brand" : "bg-[#e0e0e0]"}`}>
-                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${uploadIsPremium ? "translate-x-5" : ""}`} />
-                  </div>
-                  <span className="text-xs font-black text-brand flex items-center gap-1.5">
-                    <Crown className="w-3.5 h-3.5" /> Mark as Premium Content
-                  </span>
-                </label>
-
-                <div className="flex gap-3">
-                  <button onClick={() => setUploadStep(1)} className="flex-1 py-3 border border-brand-border text-brand font-bold text-xs rounded-xl hover:bg-[#f3f3f3]">
-                    ← Back
-                  </button>
-                  <button onClick={() => uploadTitle && uploadDesc ? setUploadStep(3) : null}
-                    disabled={!uploadTitle || !uploadDesc || uploadGrade.length === 0}
-                    className="flex-1 bg-brand text-white font-black text-xs py-3 rounded-xl disabled:opacity-40 transition-all">
-                    Review & Publish →
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 3 — Review & Submit */}
-            {uploadStep === 3 && (
-              <div className="p-6 md:p-8 flex flex-col gap-5">
-                <div className="bg-[#f3f3f3] rounded-2xl p-5 grid grid-cols-2 gap-4 text-xs">
-                  <div><span className="text-[10px] uppercase text-brand-faint font-bold">Title</span><p className="font-black text-brand mt-0.5">{uploadTitle}</p></div>
-                  <div><span className="text-[10px] uppercase text-brand-faint font-bold">Subject</span><p className="font-black text-brand mt-0.5">{uploadSubject}</p></div>
-                  <div><span className="text-[10px] uppercase text-brand-faint font-bold">Type</span><p className="font-black text-brand mt-0.5">{uploadType}</p></div>
-                  <div><span className="text-[10px] uppercase text-brand-faint font-bold">Grades</span><p className="font-black text-brand mt-0.5">{uploadGrade.join(", ")}</p></div>
-                  <div><span className="text-[10px] uppercase text-brand-faint font-bold">Syllabus</span><p className="font-black text-brand mt-0.5">{uploadSyllabus}</p></div>
-                  <div><span className="text-[10px] uppercase text-brand-faint font-bold">Medium</span><p className="font-black text-brand mt-0.5">{uploadMedium}</p></div>
-                  <div><span className="text-[10px] uppercase text-brand-faint font-bold">File</span><p className="font-black text-brand mt-0.5 truncate">{selectedFile?.name}</p></div>
-                  <div><span className="text-[10px] uppercase text-brand-faint font-bold">Access</span>
-                    <p className={`font-black mt-0.5 ${uploadIsPremium ? "text-amber-600" : "text-emerald-600"}`}>{uploadIsPremium ? "Premium" : "Free"}</p>
-                  </div>
-                </div>
-
-                {filePreview && <img src={filePreview} className="max-h-40 rounded-xl object-contain mx-auto" alt="Preview" />}
-
-                {uploadError2 && <div className="bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl p-3">{uploadError2}</div>}
-                {uploadSuccess2 && (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between">
-                    <span className="text-xs font-bold text-emerald-700 flex items-center gap-2"><CheckCircle className="w-4 h-4" />Published successfully!</span>
-                    <a href={`/image/${uploadSuccess2}`} target="_blank" className="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-700">View Live →</a>
-                  </div>
-                )}
-
-                {uploadProgress > 0 && uploadProgress < 100 && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex justify-between text-[10px] font-bold text-brand-muted">
-                      <span>Uploading to storage...</span><span>{uploadProgress}%</span>
-                    </div>
-                    <div className="h-2 bg-[#f3f3f3] rounded-full overflow-hidden">
-                      <div className="h-full bg-brand rounded-full transition-all" style={{width:`${uploadProgress}%`}} />
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <button onClick={() => setUploadStep(2)} disabled={uploadProgress > 0}
-                    className="flex-1 py-3 border border-brand-border text-brand font-bold text-xs rounded-xl hover:bg-[#f3f3f3] disabled:opacity-40">← Edit</button>
-                  <button onClick={handleUploadSubmit} disabled={uploadProgress > 0 || !!uploadSuccess2}
-                    className="flex-1 bg-brand text-white font-black text-xs py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">
-                    {uploadProgress > 0 ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent"/>Uploading...</> : <><Upload className="w-3.5 h-3.5"/>Publish Now</>}
-                  </button>
-                </div>
-              </div>
-            )}
-
-          </div>
-        )}
 
         {/* ================= MANAGE INVENTORY TAB ================= */}
         {activeTab === "manage" && (
@@ -867,15 +700,22 @@ export default function AdminDashboard() {
                       <td className="p-3">{item.grade}</td>
                       <td className="p-3">
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                          item.isPremium ? "bg-brand text-white" : "bg-[#f3f3f3] text-brand"
+                          item.is_premium ? "bg-brand text-white" : "bg-[#f3f3f3] text-brand"
                         }`}>
-                          {item.isPremium ? "Premium" : "Free"}
+                          {item.is_premium ? "Premium" : "Free"}
                         </span>
                       </td>
-                      <td className="p-3">{formatDownloadCount(item.downloads)}</td>
+                      <td className="p-3">{formatDownloadCount(item.download_count || 0)}</td>
                       <td className="p-3 text-right flex justify-end gap-1.5">
+                        <a
+                          href={`/image/${item.id}`} target="_blank" rel="noopener noreferrer"
+                          className="p-1.5 hover:bg-[#f3f3f3] rounded-lg text-brand border border-brand-border inline-flex items-center justify-center"
+                          title="View"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </a>
                         <button
-                          onClick={() => alert(`Opening edit slider for image ID: ${item.id}`)}
+                          onClick={() => handleOpenEdit(item)}
                           className="p-1.5 hover:bg-[#f3f3f3] rounded-lg text-brand border border-brand-border"
                           title="Edit"
                         >
@@ -1236,6 +1076,23 @@ export default function AdminDashboard() {
 
           </div>
         )}
+
+        {/* ================= EDIT IMAGE MODAL ================= */}
+        <EditVisualModal
+          isOpen={!!editingImageId}
+          onClose={() => setEditingImageId(null)}
+          onSubmit={(e) => { if (e && e.preventDefault) e.preventDefault(); handleSaveEdit(); }}
+          isSaving={isSavingEdit}
+          editTitle={editTitle} setEditTitle={setEditTitle}
+          editDescription={editDescription} setEditDescription={setEditDescription}
+          editGrade={editGrade} setEditGrade={setEditGrade}
+          editSubject={editSubject} setEditSubject={setEditSubject}
+          editType={editType} setEditType={setEditType}
+          editSyllabus={editSyllabus} setEditSyllabus={setEditSyllabus}
+          editMedium={editMedium} setEditMedium={setEditMedium}
+          editTags={editTags} setEditTags={setEditTags}
+          editIsPremium={editIsPremium} setEditIsPremium={setEditIsPremium}
+        />
 
       </main>
 

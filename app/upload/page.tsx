@@ -21,34 +21,11 @@ import {
   Plus,
   Edit2,
   Trash2,
+  ExternalLink,
 } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-
-const SUBJECTS: (string | { group: string; options: string[] })[] = [
-  { group: "Sciences", options: ["Physics", "Chemistry", "Biology", "Environmental Science"] },
-  "Mathematics & Statistics",
-  { group: "Engineering", options: ["Mechanical Engineering", "Electrical Engineering", "Civil Engineering", "Computer/Software Engineering", "Chemical Engineering", "Electronics"] },
-  { group: "Computer Science / IT", options: ["Programming", "AI/ML", "Cybersecurity", "Data Science"] },
-  "Medicine & Health Sciences",
-  "Business, Economics & Finance",
-  "Law",
-  { group: "Arts & Humanities", options: ["History", "Literature", "Philosophy", "Languages"] },
-  { group: "Social Sciences", options: ["Psychology", "Sociology", "Political Science"] },
-  "Architecture & Design",
-  "Agriculture"
-];
-const GRADES = ["Pre-primary / Kindergarten", "Primary / Elementary", "Middle School", "High School", "O/L (Ordinary Level)", "A/L (Advanced Level)", "Undergraduate", "Postgraduate", "Doctoral / PhD", "Professional / Certifications"];
-const TYPES = ["Mind Map", "Diagram", "Graph", "Flowchart", "Timeline", "Illustration", "Comparison Table", "Cheat Sheet"];
-const SYLLABUSES: (string | { group: string; options: string[] })[] = [
-  { group: "International", options: ["IB Diploma", "Cambridge IGCSE", "Cambridge A-Level", "Edexcel/Pearson"] },
-  { group: "US", options: ["Common Core", "AP (Advanced Placement)", "State Standards"] },
-  { group: "UK", options: ["National Curriculum", "AQA", "OCR"] },
-  { group: "India", options: ["CBSE", "ICSE", "State Boards"] },
-  { group: "Sri Lanka", options: ["National Syllabus", "Local University"] },
-  "National Curriculum (Other)",
-  { group: "Exam-Prep", options: ["SAT", "GRE", "GMAT", "JEE", "NEET", "IELTS"] }
-];
-const MEDIUMS = ["English", "Sinhala", "Tamil", "Mandarin Chinese", "Spanish", "Hindi", "Arabic", "French", "Portuguese", "Russian", "Bengali", "German", "Japanese", "Indonesian/Malay", "Urdu", "Other"];
+import { GRADES, SUBJECTS, TYPES, SYLLABUSES, MEDIUMS } from "@/lib/constants";
+import EditVisualModal from "@/components/EditVisualModal";
 
 type UploadStatus = "pending_review" | "approved" | "rejected" | "draft";
 
@@ -62,6 +39,8 @@ interface MyUpload {
   rejection_reason: string | null;
   thumbnail_url: string | null;
   description: string | null;
+  is_premium?: boolean;
+  image_tags?: { tag: string; tag_type: string }[];
 }
 
 interface UploadMetadata {
@@ -205,6 +184,15 @@ export default function ContributorUploadPortal() {
   const [editingUploadId, setEditingUploadId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editGrade, setEditGrade] = useState("");
+  const [editSubject, setEditSubject] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editSyllabus, setEditSyllabus] = useState("");
+  const [editMedium, setEditMedium] = useState("");
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [editTagInput, setEditTagInput] = useState("");
+  const [editIsPremium, setEditIsPremium] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // Auth check — must be logged in with correct role
   useEffect(() => {
@@ -235,10 +223,10 @@ export default function ContributorUploadPortal() {
       if (!userId) return;
       setLoadingUploads(true);
 
-      if (isSupabaseConfigured() && userId !== "sandbox-user") {
+      if (isSupabaseConfigured() && userId) {
         const { data, error } = await supabase
           .from("images")
-          .select("id, title, description, created_at, status, view_count, download_count, rejection_reason, thumbnail_url")
+          .select("id, title, description, is_premium, created_at, status, view_count, download_count, rejection_reason, thumbnail_url, image_tags(tag, tag_type)")
           .eq("uploaded_by", userId)
           .order("created_at", { ascending: false });
 
@@ -246,12 +234,7 @@ export default function ContributorUploadPortal() {
           setMyUploads(data as MyUpload[]);
         }
       } else {
-        // Mock data for sandbox
-        setMyUploads([
-          { id: "u1", title: "Human Respiratory System", description: null, created_at: "2026-06-22", status: "pending_review", view_count: 0, download_count: 0, rejection_reason: null, thumbnail_url: null },
-          { id: "u2", title: "Carbon Cycle Flowchart", description: null, created_at: "2026-06-20", status: "approved", view_count: 240, download_count: 48, rejection_reason: null, thumbnail_url: null },
-          { id: "u3", title: "Water Cycle Diagram v1", description: null, created_at: "2026-06-18", status: "rejected", view_count: 0, download_count: 0, rejection_reason: "Labeling text has spelling errors on 'Condensation' and lines overlap.", thumbnail_url: null },
-        ]);
+        setMyUploads([]);
       }
 
       setLoadingUploads(false);
@@ -275,26 +258,88 @@ export default function ContributorUploadPortal() {
     setEditingUploadId(upload.id);
     setEditTitle(upload.title || "");
     setEditDescription(upload.description || "");
+    setEditIsPremium(upload.is_premium || false);
+    
+    const tags = upload.image_tags || [];
+    setEditGrade(tags.find(t => t.tag_type === "grade")?.tag || "");
+    setEditSubject(tags.find(t => t.tag_type === "subject")?.tag || "");
+    setEditType(tags.find(t => t.tag_type === "type")?.tag || "");
+    setEditSyllabus(tags.find(t => t.tag_type === "syllabus")?.tag || "");
+    setEditMedium(tags.find(t => t.tag_type === "medium")?.tag || "");
+    
+    const customTags = tags.filter(t => t.tag_type === "custom").map(t => t.tag);
+    setEditTags(customTags);
+    setEditTagInput("");
     setIsEditModalOpen(true);
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUploadId) return;
+    setIsSavingEdit(true);
+
     try {
-      const { error } = await supabase
+      // 1. Update images table
+      const { error: updateError } = await supabase
         .from("images")
-        .update({ title: editTitle, description: editDescription })
+        .update({ 
+          title: editTitle, 
+          description: editDescription,
+          is_premium: editIsPremium
+        })
         .eq("id", editingUploadId);
-      if (error) throw error;
+
+      if (updateError) throw updateError;
+
+      // 2. Delete old tags
+      const { error: deleteError } = await supabase
+        .from("image_tags")
+        .delete()
+        .eq("image_id", editingUploadId);
+        
+      if (deleteError) throw deleteError;
+
+      // 3. Insert new tags
+      const newTags: any[] = [];
+      if (editGrade) newTags.push({ image_id: editingUploadId, tag_type: "grade", tag: editGrade });
+      if (editSubject) newTags.push({ image_id: editingUploadId, tag_type: "subject", tag: editSubject });
+      if (editType) newTags.push({ image_id: editingUploadId, tag_type: "type", tag: editType });
+      if (editSyllabus) newTags.push({ image_id: editingUploadId, tag_type: "syllabus", tag: editSyllabus });
+      if (editMedium) newTags.push({ image_id: editingUploadId, tag_type: "medium", tag: editMedium });
+      
+      editTags.forEach(tag => {
+        if (tag) newTags.push({ image_id: editingUploadId, tag_type: "custom", tag });
+      });
+
+      if (newTags.length > 0) {
+        const { error: insertError } = await supabase
+          .from("image_tags")
+          .insert(newTags);
+        if (insertError) throw insertError;
+      }
+
+      // Update local state without full reload
       setMyUploads((prev) =>
         prev.map((u) =>
-          u.id === editingUploadId ? { ...u, title: editTitle, description: editDescription } : u
+          u.id === editingUploadId 
+            ? { 
+                ...u, 
+                title: editTitle, 
+                description: editDescription, 
+                is_premium: editIsPremium,
+                image_tags: newTags.map(t => ({ tag: t.tag, tag_type: t.tag_type }))
+              } 
+            : u
         )
       );
+      
       setIsEditModalOpen(false);
-    } catch (err) {
-      alert("Error updating visual.");
+      setEditingUploadId(null);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save changes. Please try again.");
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -811,6 +856,11 @@ export default function ContributorUploadPortal() {
                         {meta.icon}{meta.label}
                       </span>
                       <div className="flex gap-1 ml-2">
+                        {upload.status === "approved" && (
+                          <a href={`/image/${upload.id}`} target="_blank" rel="noopener noreferrer" className="p-2 text-brand hover:bg-[#f3f3f3] rounded-full transition-colors inline-flex items-center justify-center" title="View on site">
+                            <Eye className="w-4 h-4" />
+                          </a>
+                        )}
                         <button onClick={() => openEditModal(upload)} className="p-2 text-brand hover:bg-[#f3f3f3] rounded-full transition-colors" title="Edit">
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -829,55 +879,21 @@ export default function ContributorUploadPortal() {
       </div>
 
       {/* Edit Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-brand/40 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border bg-brand-surface">
-              <h2 className="text-lg font-black text-brand">Edit Visual</h2>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-brand-faint hover:text-brand">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleEditSubmit} className="p-6 flex flex-col gap-4">
-              <div>
-                <label className="block text-xs font-bold text-brand mb-1.5 uppercase tracking-wide">Title</label>
-                <input
-                  type="text"
-                  required
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#f8f9fa] border border-brand-border rounded-xl focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all text-sm font-semibold text-brand placeholder:text-[rgba(0,57,60,0.3)]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-brand mb-1.5 uppercase tracking-wide">Description</label>
-                <textarea
-                  rows={4}
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#f8f9fa] border border-brand-border rounded-xl focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all text-sm font-semibold text-brand placeholder:text-[rgba(0,57,60,0.3)] resize-none"
-                />
-              </div>
-              <div className="flex gap-3 justify-end mt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#f3f3f3] text-[rgba(0,57,60,0.7)] hover:bg-[#e8ecec] hover:text-brand transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl font-black text-sm bg-brand text-white shadow-sm hover:-translate-y-0.5 transition-all"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <EditVisualModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditSubmit}
+        isSaving={isSavingEdit}
+        editTitle={editTitle} setEditTitle={setEditTitle}
+        editDescription={editDescription} setEditDescription={setEditDescription}
+        editGrade={editGrade} setEditGrade={setEditGrade}
+        editSubject={editSubject} setEditSubject={setEditSubject}
+        editType={editType} setEditType={setEditType}
+        editSyllabus={editSyllabus} setEditSyllabus={setEditSyllabus}
+        editMedium={editMedium} setEditMedium={setEditMedium}
+        editTags={editTags} setEditTags={setEditTags}
+        editIsPremium={editIsPremium} setEditIsPremium={setEditIsPremium}
+      />
     </div>
   );
 }

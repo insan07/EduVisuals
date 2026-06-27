@@ -18,13 +18,14 @@ const config: Config = {
           text: '#92400E',
         },
         brand: {
-          DEFAULT: '#1A1830',
-          muted: '#4A4870',
-          faint: '#8884A8',
-          surface: '#F7F6FF',
+          DEFAULT: '#002D30',
+          muted: '#073238',
+          faint: '#849F9F', // Muted grayish-mint for secondary text
+          accent: '#6EE7B7', // Pastel mint for special highlights
+          surface: '#F2FAFA',
           card: '#FFFFFF',
-          hover: '#F3F2FC',
-          border: 'rgba(139, 92, 246, 0.12)',
+          hover: '#E0F4F2',
+          border: 'rgba(0, 45, 48, 0.12)', // Subtle dark border based on DEFAULT
         },
         purple: {
           DEFAULT: '#7C3AED',

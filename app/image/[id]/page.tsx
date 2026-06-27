@@ -31,7 +31,8 @@ import {
   Edit2,
   Trash2,
 } from "lucide-react";
-
+import { GRADES, SUBJECTS, TYPES, SYLLABUSES, MEDIUMS } from "@/lib/constants";
+import EditVisualModal from "@/components/EditVisualModal";
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -54,6 +55,15 @@ export default function ImageDetailPage({ params }: PageProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editGrade, setEditGrade] = useState("");
+  const [editSubject, setEditSubject] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editSyllabus, setEditSyllabus] = useState("");
+  const [editMedium, setEditMedium] = useState("");
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [editTagInput, setEditTagInput] = useState("");
+  const [editIsPremium, setEditIsPremium] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   
   // Report Modal State
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -81,17 +91,22 @@ export default function ImageDetailPage({ params }: PageProps) {
 
       // 1. Get current auth state
       const { data: { session } } = await supabase.auth.getSession();
+      let userRole = "guest";
+      let userId = "";
+
       if (!session) {
         setUserState("guest");
       } else {
+        userId = session.user.id;
         const { data: profile } = await supabase
           .from("profiles")
           .select("tier, role")
-          .eq("id", session.user.id)
+          .eq("id", userId)
           .single();
+        userRole = profile?.role || "free_user";
         if (profile?.tier === "Premium") setUserState("premium");
         else setUserState("free");
-        setCurrentUser({ id: session.user.id, role: profile?.role });
+        setCurrentUser({ id: userId, role: userRole });
       }
 
       // 2. Fetch image
@@ -99,14 +114,24 @@ export default function ImageDetailPage({ params }: PageProps) {
         .from("images")
         .select("*, image_tags(*)")
         .eq("id", currentId)
-        .eq("is_published", true)
-        .eq("status", "approved")
         .single();
 
       if (error || !image) {
         setIsNotFound(true);
         setIsLoading(false);
         return;
+      }
+
+      // 3. Authorization check for unpublished or unapproved
+      const isOwner = userId === image.uploaded_by;
+      const isAdminOrModerator = userRole === "admin" || userRole === "moderator" || userRole === "team_creator";
+      
+      if (!image.is_published || image.status !== "approved") {
+        if (!isOwner && !isAdminOrModerator) {
+          setIsNotFound(true);
+          setIsLoading(false);
+          return;
+        }
       }
 
       // Extract flatten tags
@@ -161,19 +186,87 @@ export default function ImageDetailPage({ params }: PageProps) {
     }
   };
 
+  const openEditModal = () => {
+    if (!visual) return;
+    setEditTitle(visual.title || "");
+    setEditDescription(visual.description || "");
+    setEditIsPremium(visual.is_premium || false);
+    
+    setEditGrade(visual.grade || "");
+    setEditSubject(visual.subject || "");
+    setEditType(visual.type || "");
+    setEditSyllabus(visual.syllabus || "");
+    setEditMedium(visual.medium || "");
+    
+    const tags = visual.customTags || [];
+    setEditTags(tags);
+    setIsEditModalOpen(true);
+  };
+
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!visual) return;
+    setIsSavingEdit(true);
+
     try {
-      const { error } = await supabase
+      // 1. Update images table
+      const { error: updateError } = await supabase
         .from("images")
-        .update({ title: editTitle, description: editDescription })
-        .eq("id", currentId);
-      if (error) throw error;
-      setVisual({ ...visual, title: editTitle, description: editDescription });
+        .update({ 
+          title: editTitle, 
+          description: editDescription,
+          is_premium: editIsPremium
+        })
+        .eq("id", visual.id);
+
+      if (updateError) throw updateError;
+
+      // 2. Delete old tags
+      const { error: deleteError } = await supabase
+        .from("image_tags")
+        .delete()
+        .eq("image_id", visual.id);
+        
+      if (deleteError) throw deleteError;
+
+      // 3. Insert new tags
+      const newTags = [];
+      if (editGrade) newTags.push({ image_id: visual.id, tag_type: "grade", tag: editGrade });
+      if (editSubject) newTags.push({ image_id: visual.id, tag_type: "subject", tag: editSubject });
+      if (editType) newTags.push({ image_id: visual.id, tag_type: "type", tag: editType });
+      if (editSyllabus) newTags.push({ image_id: visual.id, tag_type: "syllabus", tag: editSyllabus });
+      if (editMedium) newTags.push({ image_id: visual.id, tag_type: "medium", tag: editMedium });
+      
+      editTags.forEach(tag => {
+        if (tag) newTags.push({ image_id: visual.id, tag_type: "custom", tag });
+      });
+
+      if (newTags.length > 0) {
+        const { error: insertError } = await supabase
+          .from("image_tags")
+          .insert(newTags);
+        if (insertError) throw insertError;
+      }
+      
+      // Update local state
+      setVisual({ 
+        ...visual, 
+        title: editTitle, 
+        description: editDescription,
+        is_premium: editIsPremium,
+        grade: editGrade,
+        subject: editSubject,
+        type: editType,
+        syllabus: editSyllabus,
+        medium: editMedium,
+        customTags: editTags
+      });
       setIsEditModalOpen(false);
-      triggerToast("Visual updated successfully!");
     } catch (err) {
+      console.error(err);
       alert("Error updating visual.");
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -195,7 +288,7 @@ export default function ImageDetailPage({ params }: PageProps) {
   const handleDownloadClick = async (type?: string) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      useAuthModal.getState().open();
+      useAuthModal.getState().open("signin");
       return;
     }
 
@@ -212,7 +305,7 @@ export default function ImageDetailPage({ params }: PageProps) {
 
       const result = await res.json();
       
-      if (res.status === 401) { useAuthModal.getState().open(); return; }
+      if (res.status === 401) { useAuthModal.getState().open("signin"); return; }
       if (result.requiresPremium) { window.location.href = "/pricing"; return; }
       if (result.limitReached) { alert("Daily limit reached (5/day). Upgrade to Premium!"); return; }
       
@@ -489,7 +582,7 @@ export default function ImageDetailPage({ params }: PageProps) {
                       {currentUser && (currentUser.id === visual.uploaded_by || currentUser.role === 'admin' || currentUser.role === 'moderator') && (
                         <>
                           <button 
-                            onClick={() => { setIsEditModalOpen(true); setIsDropdownOpen(false); }}
+                            onClick={() => { openEditModal(); setIsDropdownOpen(false); }}
                             className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
                           >
                             <Edit2 className="w-3.5 h-3.5" /> Edit Visual
@@ -562,7 +655,7 @@ export default function ImageDetailPage({ params }: PageProps) {
                       </Link>
                       {userState === "guest" && (
                         <button 
-                          onClick={() => { setShowUpsell(false); useAuthModal.getState().open(); }}
+                          onClick={() => { setShowUpsell(false); useAuthModal.getState().open("signin"); }}
                           className="w-full bg-white border border-amber-200 text-amber-700 hover:bg-amber-100 font-extrabold text-xs py-3 rounded-xl transition-all"
                         >
                           Sign In
@@ -696,56 +789,22 @@ export default function ImageDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Edit Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-brand/40 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border bg-brand-surface">
-              <h2 className="text-lg font-black text-brand">Edit Visual</h2>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-brand-faint hover:text-brand">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleEditSubmit} className="p-6 flex flex-col gap-4">
-              <div>
-                <label className="block text-xs font-bold text-brand mb-1.5 uppercase tracking-wide">Title</label>
-                <input
-                  type="text"
-                  required
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#f8f9fa] border border-brand-border rounded-xl focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all text-sm font-semibold text-brand placeholder:text-[rgba(0,57,60,0.3)]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-brand mb-1.5 uppercase tracking-wide">Description</label>
-                <textarea
-                  rows={4}
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#f8f9fa] border border-brand-border rounded-xl focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all text-sm font-semibold text-brand placeholder:text-[rgba(0,57,60,0.3)] resize-none"
-                />
-              </div>
-              <div className="flex gap-3 justify-end mt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#f3f3f3] text-[rgba(0,57,60,0.7)] hover:bg-[#e8ecec] hover:text-brand transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl font-black text-sm bg-brand text-white shadow-sm hover:-translate-y-0.5 transition-all"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <EditVisualModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditSubmit}
+        isSaving={isSavingEdit}
+        editTitle={editTitle} setEditTitle={setEditTitle}
+        editDescription={editDescription} setEditDescription={setEditDescription}
+        editGrade={editGrade} setEditGrade={setEditGrade}
+        editSubject={editSubject} setEditSubject={setEditSubject}
+        editType={editType} setEditType={setEditType}
+        editSyllabus={editSyllabus} setEditSyllabus={setEditSyllabus}
+        editMedium={editMedium} setEditMedium={setEditMedium}
+        editTags={editTags} setEditTags={setEditTags}
+        editIsPremium={editIsPremium} setEditIsPremium={setEditIsPremium}
+      />
+
       {/* Report Modal */}
       {isReportModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

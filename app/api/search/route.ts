@@ -171,25 +171,38 @@ export async function GET(request: NextRequest) {
       const medium = tags.find((t: any) => t.tag_type === "medium")?.tag || "";
       
       let searchScore = 0;
+      let matchCount = 0;
       if (isMemorySearch && queryWords.length > 0) {
-        let matchesAll = true;
         for (const word of queryWords) {
           let wordScore = 0;
-          wordScore += getFuzzyScore(img.title, word, 4);
+          wordScore += getFuzzyScore(img.title, word, 5);
           wordScore += getFuzzyScore(subject, word, 3);
           wordScore += getFuzzyScore(grade, word, 3);
-          wordScore += getFuzzyScore(type, word, 3);
+          
+          // Try matching type directly, and also stripped of spaces (for "mindmap" vs "mind map")
+          const typeNoSpace = type.replace(/\s+/g, '').toLowerCase();
+          const wordLower = word.toLowerCase();
+          wordScore += getFuzzyScore(type, word, 4);
+          if (typeNoSpace.includes(wordLower) || wordLower.includes(typeNoSpace)) {
+            wordScore += 4;
+          }
+          
           wordScore += getFuzzyScore(syllabus, word, 3);
           wordScore += getFuzzyScore(medium, word, 3);
           wordScore += getFuzzyScore(img.description, word, 1);
           
-          if (wordScore === 0) {
-            matchesAll = false;
-            break;
+          if (wordScore > 0) {
+            matchCount++;
           }
           searchScore += wordScore;
         }
-        if (!matchesAll) searchScore = -1;
+        
+        if (matchCount === 0) {
+          searchScore = -1; // No words matched at all
+        } else {
+          // Bonus multiplier for matching multiple different words in the query
+          searchScore *= matchCount;
+        }
       }
 
       return {

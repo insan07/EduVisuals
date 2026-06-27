@@ -97,7 +97,7 @@ export default function PricingPage() {
             </ul>
           </div>
           <button
-            onClick={() => authModal.open()}
+            onClick={() => authModal.open("signup")}
             className="w-full mt-10 bg-white border-2 border-brand hover:bg-brand hover:text-white text-brand font-extrabold text-sm py-3.5 rounded-xl transition-all shadow-sm"
           >
             Get Started Free

@@ -8,12 +8,12 @@ export default function Footer() {
   return (
     <footer className="bg-brand text-white py-12 px-4 sm:px-6 lg:px-8 mt-auto">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-        
+
         {/* Left Section: Logo, Tagline & Flag */}
         <div className="flex flex-col gap-3 max-w-sm">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative flex items-center justify-center w-8 h-8 transition-transform duration-300 group-hover:scale-110 translate-y-1">
-              <div 
+            <div className="relative flex items-center justify-center w-8 h-8 transition-transform duration-300 group-hover:scale-110 translate-y-0.9">
+              <div
                 style={{
                   backgroundColor: "#ffffff",
                   maskImage: "url('/logo.png')",

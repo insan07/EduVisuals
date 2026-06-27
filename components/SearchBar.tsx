@@ -12,12 +12,14 @@ interface SearchBarProps {
   className?: string;
   showSuggestionsInline?: boolean;
   darkHero?: boolean;
+  mobilePlaceholder?: string;
   onSubmit?: (term: string) => void;
 }
 
 export default function SearchBar({
   initialValue = "",
   placeholder = "Search educational diagrams, mind maps, layouts...",
+  mobilePlaceholder = "Search for visuals...",
   className = "",
   showSuggestionsInline = false,
   darkHero = false,
@@ -31,6 +33,7 @@ export default function SearchBar({
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [currentPlaceholder, setCurrentPlaceholder] = useState(placeholder);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -49,6 +52,20 @@ export default function SearchBar({
   useEffect(() => {
     setInputVal(initialValue);
   }, [initialValue]);
+
+  // Responsive placeholder handling
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setCurrentPlaceholder(mobilePlaceholder);
+      } else {
+        setCurrentPlaceholder(placeholder);
+      }
+    };
+    handleResize(); // set initially on mount
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [placeholder, mobilePlaceholder]);
 
   // Load recent searches from localStorage
   useEffect(() => {
@@ -220,7 +237,7 @@ export default function SearchBar({
         <input
           type="text"
           value={inputVal}
-          placeholder={placeholder}
+          placeholder={currentPlaceholder}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => setShowDropdown(true)}
           onKeyDown={handleKeyDown}
@@ -228,7 +245,7 @@ export default function SearchBar({
             darkHero 
               ? "text-base md:text-lg font-semibold text-white placeholder:text-white/60 rounded-2xl" 
               : "text-sm text-brand placeholder:text-[rgba(0,57,60,0.45)] rounded-full"
-          }`}
+          } truncate`}
         />
 
         <div className="absolute right-2 flex items-center gap-1">
@@ -267,7 +284,7 @@ export default function SearchBar({
           {/* Autocomplete Subject Matches */}
           {suggestions.length > 0 && (
             <div className="p-2 border-b border-brand-border">
-              <span className="text-[10px] font-black uppercase text-brand-faint px-3 py-1 block">
+              <span className="text-[10px] font-black uppercase text-brand/40 px-3 py-1 block">
                 Suggested Subject Matches
               </span>
               {suggestions.map((item, idx) => (
@@ -291,7 +308,7 @@ export default function SearchBar({
           {/* Recent Searches Section */}
           {recentSearches.length > 0 && (
             <div className="p-2 border-b border-brand-border">
-              <span className="text-[10px] font-black uppercase text-brand-faint px-3 py-1 block">
+              <span className="text-[10px] font-black uppercase text-brand/40 px-3 py-1 block">
                 Recent Searches
               </span>
               {recentSearches.map((item, idx) => {
@@ -307,7 +324,7 @@ export default function SearchBar({
                       activeIndex === totalIdx ? "bg-[#f3f3f3]" : ""
                     }`}
                   >
-                    <Clock className="w-3.5 h-3.5 text-brand-faint" />
+                    <Clock className="w-3.5 h-3.5 text-brand/40" />
                     {item}
                   </button>
                 );
@@ -318,7 +335,7 @@ export default function SearchBar({
           {/* Empty query default: Popular categories list */}
           {!inputVal && (
             <div className="p-3">
-              <span className="text-[10px] font-black uppercase text-brand-faint px-2 py-1 block mb-1">
+              <span className="text-[10px] font-black uppercase text-brand/40 px-2 py-1 block mb-1">
                 Explore Popular Categories
               </span>
               <div className="flex flex-wrap gap-2 p-1">

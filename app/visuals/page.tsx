@@ -212,7 +212,7 @@ function SearchResultsContent() {
   /* ── Download handler ── */
   const handleDownload = async (visual: Visual) => {
     if (visual.is_premium) {
-      openAuthModal(visual.file_url);
+      openAuthModal("signin", visual.file_url);
       return;
     }
     

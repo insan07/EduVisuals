@@ -7,7 +7,7 @@ import { useAuthModal } from "@/store/useAuthModal";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export default function AuthModal() {
-  const { isOpen, close, triggerSuccess, intendedDownload } = useAuthModal();
+  const { isOpen, close, triggerSuccess, intendedDownload, initialTab } = useAuthModal();
   
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [showPassword, setShowPassword] = useState(false);
@@ -27,10 +27,11 @@ export default function AuthModal() {
   const [signUpPassword, setSignUpPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState<"Student" | "Teacher" | "Institution">("Student");
 
-  // Prevent scroll when modal is open
+  // Prevent scroll when modal is open and sync tab
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      setActiveTab(initialTab);
     } else {
       document.body.style.overflow = "unset";
     }
@@ -165,7 +166,7 @@ export default function AuthModal() {
     if (isSupabaseConfigured()) {
       setIsLoading(true);
       try {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: signUpEmail,
           password: signUpPassword,
           options: {
@@ -178,9 +179,15 @@ export default function AuthModal() {
         });
         if (error) throw error;
 
-        setIsLoading(false);
-        triggerToast("Check your email to confirm registration!");
-        setActiveTab("signin");
+        if (data.session) {
+          // Automatically logged in (Email confirmations disabled)
+          handleAuthSuccess(data.user?.email || signUpEmail, selectedRole, "Free");
+        } else {
+          // Email confirmation required
+          setIsLoading(false);
+          triggerToast("Check your email to confirm registration!");
+          setActiveTab("signin");
+        }
       } catch (err: any) {
         setIsLoading(false);
         triggerToast(err.message || "Registration failed.", true);
@@ -196,8 +203,8 @@ export default function AuthModal() {
       {/* Click outside backdrop to close */}
       <div className="absolute inset-0 z-0" onClick={close} />
 
-      {/* Modal Card: light premium layout */}
-      <div className="relative z-10 w-full max-w-[400px] h-full sm:h-auto bg-white border border-brand-border sm:rounded-[20px] p-6 md:p-8 flex flex-col justify-between sm:justify-start shadow-2xl animate-in zoom-in-95 slide-in-from-bottom sm:slide-in-from-none duration-300 select-none">
+      {/* Modal Card: Minimal Layout */}
+      <div className="relative z-10 w-full max-w-[420px] max-h-[95vh] overflow-y-auto sm:h-auto bg-white border border-brand-border sm:rounded-[24px] p-6 md:p-8 flex flex-col shadow-2xl animate-in zoom-in-95 slide-in-from-bottom sm:slide-in-from-none duration-300 select-none hide-scrollbar">
         
         <div>
           {/* Close button */}
@@ -209,13 +216,14 @@ export default function AuthModal() {
             <X className="w-5 h-5" />
           </button>
 
-          {/* Crown Logo Header */}
-          <div className="flex flex-col items-center text-center mt-4 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#073238]/10 to-[#073238]/5 border border-brand-border flex items-center justify-center mb-3">
-              <Crown className="w-7 h-7 text-brand" />
-            </div>
+          {/* Minimal Header */}
+          <div className="flex flex-col items-center text-center mt-2 mb-6">
             <h2 className="text-xl md:text-2xl font-black text-brand">
-              Sign in to Download
+              {intendedDownload 
+                ? "Sign in to Download" 
+                : activeTab === "signin" 
+                  ? "Welcome Back" 
+                  : "Create an Account"}
             </h2>
             <p className="text-xs text-brand-muted font-semibold mt-1">
               Join 50,000+ Global students. It&apos;s free.

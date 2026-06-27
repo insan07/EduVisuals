@@ -71,7 +71,7 @@ export default function Navbar() {
 
     const roleLabels: Record<string, string> = {
       admin: "Admin",
-      moderator: "Moderator", 
+      moderator: "Moderator",
       team_creator: "Creator",
       premium_user: "Premium",
       free_user: "Student",
@@ -152,20 +152,19 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
             ? "bg-white/95 backdrop-blur-md border-b border-brand-border shadow-sm"
             : "bg-white border-b border-brand-border"
-        } ${isDashboard ? "hidden md:block" : ""}`}
+          } ${isDashboard ? "hidden md:block" : ""}`}
       >
         {/* Height: 64px desktop (h-16), 56px mobile (h-14) */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 md:h-16 flex items-center justify-between">
-          
+
           {/* Left: Logo */}
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 group z-50">
-              <div className="relative flex items-center justify-center w-9 h-9 transition-transform duration-300 group-hover:scale-110 translate-y-1.5">
-                <div 
+              <div className="relative flex items-center justify-center w-7 h-7 transition-transform duration-300 group-hover:scale-110 translate-y-0.99">
+                <div
                   style={{
                     backgroundColor: "#073238",
                     maskImage: "url('/logo.png')",
@@ -190,9 +189,9 @@ export default function Navbar() {
             <div className="hidden lg:flex items-center gap-6 ml-8 text-sm font-bold text-brand select-none whitespace-nowrap">
               <Link href="/" className="hover:text-brand transition-colors">Home</Link>
               <Link href="/visuals" className="hover:text-brand transition-colors">Visuals</Link>
-              
+
               {/* Company Dropdown Trigger */}
-              <div 
+              <div
                 className="relative py-2"
                 onMouseEnter={() => setShowResourcesDropdown(true)}
                 onMouseLeave={() => setShowResourcesDropdown(false)}
@@ -273,97 +272,97 @@ export default function Navbar() {
                   </span>
                 </button>
 
-                  {/* Dropdown Menu / Mobile Bottom Sheet */}
-                  {showProfileDropdown && (
-                    <>
-                      {/* --- PROFILE DROPDOWN (ALL DEVICES) --- */}
-                      <div className="absolute top-[calc(100%+12px)] -right-[48px] sm:-right-2 md:-right-2 w-64 bg-white border border-brand-border rounded-2xl shadow-2xl py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200 text-xs font-semibold text-brand">
-                        <div className="px-4 py-2.5 border-b border-brand-border flex flex-col select-none">
-                          <span className="font-black truncate">{user.name}</span>
-                          <span className="text-[9px] uppercase tracking-wide text-[rgba(0,57,60,0.5)] font-bold mt-0.5">{user.displayRole} · {user.tier} Tier</span>
-                        </div>
-                        
-                        <div className="py-1">
-                          {[
-                            { label: "Overview Dashboard", tab: "overview", icon: HomeIcon },
-                            { label: "My Downloads", tab: "downloads", icon: DownloadIcon },
-                            { label: "Saved Collections", tab: "collections", icon: HeartIcon },
-                            { label: "Subscription Billing", tab: "subscription", icon: StarIcon },
-                            { label: "Account Settings", tab: "settings", icon: SettingsIcon },
-                          ].map((item) => (
-                            <Link
-                              key={item.tab}
-                              href={`/dashboard?tab=${item.tab}`}
-                              onClick={() => {
-                                setShowProfileDropdown(false);
-                                setTimeout(() => {
-                                  window.dispatchEvent(new Event("dashboard-tab-changed"));
-                                }, 50);
-                              }}
-                              className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
-                            >
-                              <item.icon className="w-3.5 h-3.5 text-brand-muted" />
-                              {item.label}
-                            </Link>
-                          ))}
-                        </div>
+                {/* Dropdown Menu / Mobile Bottom Sheet */}
+                {showProfileDropdown && (
+                  <>
+                    {/* --- PROFILE DROPDOWN (ALL DEVICES) --- */}
+                    <div className="absolute top-[calc(100%+12px)] -right-[48px] sm:-right-2 md:-right-2 w-64 bg-white border border-brand-border rounded-2xl shadow-2xl py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200 text-xs font-semibold text-brand">
+                      <div className="px-4 py-2.5 border-b border-brand-border flex flex-col select-none">
+                        <span className="font-black truncate">{user.name}</span>
+                        <span className="text-[9px] uppercase tracking-wide text-[rgba(0,57,60,0.5)] font-bold mt-0.5">{user.displayRole} · {user.tier} Tier</span>
+                      </div>
 
-                        {/* Creator or Admin actions */}
-                        {(user.role === "admin" || user.role === "moderator" || user.role === "team_creator") && (
-                          <div className="border-t border-brand-border py-1">
-                            {(user.role === "admin" || user.role === "moderator") && (
-                              <Link
-                                href="/admin"
-                                onClick={() => setShowProfileDropdown(false)}
-                                className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
-                              >
-                                <ShieldIcon className="w-3.5 h-3.5 text-brand-muted" />
-                                Admin Panel
-                              </Link>
-                            )}
+                      <div className="py-1">
+                        {[
+                          { label: "Overview Dashboard", tab: "overview", icon: HomeIcon },
+                          { label: "My Downloads", tab: "downloads", icon: DownloadIcon },
+                          { label: "Saved Collections", tab: "collections", icon: HeartIcon },
+                          { label: "Subscription Billing", tab: "subscription", icon: StarIcon },
+                          { label: "Account Settings", tab: "settings", icon: SettingsIcon },
+                        ].map((item) => (
+                          <Link
+                            key={item.tab}
+                            href={`/dashboard?tab=${item.tab}`}
+                            onClick={() => {
+                              setShowProfileDropdown(false);
+                              setTimeout(() => {
+                                window.dispatchEvent(new Event("dashboard-tab-changed"));
+                              }, 50);
+                            }}
+                            className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
+                          >
+                            <item.icon className="w-3.5 h-3.5 text-brand-muted" />
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* Creator or Admin actions */}
+                      {(user.role === "admin" || user.role === "moderator" || user.role === "team_creator") && (
+                        <div className="border-t border-brand-border py-1">
+                          {(user.role === "admin" || user.role === "moderator") && (
                             <Link
-                              href="/upload"
+                              href="/admin"
                               onClick={() => setShowProfileDropdown(false)}
                               className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
                             >
-                              <UploadIcon className="w-3.5 h-3.5 text-brand-muted" />
-                              Upload Portal
+                              <ShieldIcon className="w-3.5 h-3.5 text-brand-muted" />
+                              Admin Panel
                             </Link>
-                          </div>
-                        )}
-
-                        <div className="border-t border-brand-border pt-1">
-                          <button
-                            onClick={() => {
-                              setShowProfileDropdown(false);
-                              handleSignOut();
-                            }}
-                            className="w-full text-left flex items-center gap-2.5 px-4 py-2 hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors font-bold cursor-pointer"
+                          )}
+                          <Link
+                            href="/upload"
+                            onClick={() => setShowProfileDropdown(false)}
+                            className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
                           >
-                            <LogOutIcon className="w-3.5 h-3.5" />
-                            Sign Out
-                          </button>
+                            <UploadIcon className="w-3.5 h-3.5 text-brand-muted" />
+                            Upload Portal
+                          </Link>
                         </div>
+                      )}
+
+                      <div className="border-t border-brand-border pt-1">
+                        <button
+                          onClick={() => {
+                            setShowProfileDropdown(false);
+                            handleSignOut();
+                          }}
+                          className="w-full text-left flex items-center gap-2.5 px-4 py-2 hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors font-bold cursor-pointer"
+                        >
+                          <LogOutIcon className="w-3.5 h-3.5" />
+                          Sign Out
+                        </button>
                       </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="hidden md:flex items-center gap-3">
-                  <button
-                    onClick={() => useAuthModal.getState().open()}
-                    className="px-5 py-2 text-brand border border-brand-border hover:bg-[#f3f3f3] text-sm font-bold rounded-md transition-all duration-300 cursor-pointer"
-                  >
-                    Login
-                  </button>
-                  <button
-                    onClick={() => useAuthModal.getState().open()}
-                    className="px-5 py-2 bg-brand hover:bg-brand text-white text-sm font-black rounded-md transition-all duration-300 shadow-sm hover:scale-[1.02] cursor-pointer"
-                  >
-                    Sign Up
-                  </button>
-                </div>
-              )}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="hidden md:flex items-center gap-3">
+                <button
+                  onClick={() => useAuthModal.getState().open("signin")}
+                  className="px-5 py-2 text-brand border border-brand-border hover:bg-[#f3f3f3] text-sm font-bold rounded-md transition-all duration-300 cursor-pointer"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => useAuthModal.getState().open("signup")}
+                  className="px-5 py-2 bg-brand hover:bg-brand text-white text-sm font-black rounded-md transition-all duration-300 shadow-sm hover:scale-[1.02] cursor-pointer"
+                >
+                  Sign Up
+                </button>
+              </div>
+            )}
 
             {/* Mobile Hamburger Button */}
             <button
@@ -429,8 +428,8 @@ export default function Navbar() {
                       <Info className="w-4 h-4 text-[rgba(0,57,60,0.5)]" />
                       About Us
                     </Link>
-                    <Link 
-                      href="/help" 
+                    <Link
+                      href="/help"
                       onClick={toggleMenu}
                       className="flex items-center gap-2.5 text-sm font-bold text-[rgba(0,57,60,0.7)] hover:text-brand transition-colors py-0.5"
                     >
@@ -467,7 +466,7 @@ export default function Navbar() {
                 <button
                   onClick={() => {
                     toggleMenu();
-                    useAuthModal.getState().open();
+                    useAuthModal.getState().open("signin");
                   }}
                   className="w-full py-3.5 text-center border border-brand-border text-brand hover:bg-[#f3f3f3] rounded-md font-bold transition-all text-sm cursor-pointer"
                 >
@@ -476,7 +475,7 @@ export default function Navbar() {
                 <button
                   onClick={() => {
                     toggleMenu();
-                    useAuthModal.getState().open();
+                    useAuthModal.getState().open("signup");
                   }}
                   className="w-full py-3.5 text-center bg-brand text-white hover:bg-brand rounded-md font-black transition-all text-sm shadow-md cursor-pointer"
                 >
@@ -489,8 +488,8 @@ export default function Navbar() {
       )}      {/* Mobile Dashboard Header (Back Button) */}
       {isDashboard && (
         <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-brand-border flex items-center px-4 z-50 shadow-sm">
-          <button 
-            onClick={() => router.back()} 
+          <button
+            onClick={() => router.back()}
             className="flex items-center gap-2 text-brand font-bold hover:bg-[#f3f3f3] px-3 py-1.5 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

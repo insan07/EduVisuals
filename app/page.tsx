@@ -28,7 +28,7 @@ export default function Home() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("auth") === "required") {
-      setTimeout(() => useAuthModal.getState().open(), 200);
+      setTimeout(() => useAuthModal.getState().open("signin"), 200);
       window.history.replaceState({}, "", "/");
     }
   }, []);
@@ -60,7 +60,7 @@ export default function Home() {
 
         {/* Hero Search */}
         <div className="relative w-full max-w-2xl mb-10 animate-fade-in-up shadow-2xl rounded-2xl group z-20" style={{ animationDelay: '300ms' }}>
-          <SearchBar darkHero={true} placeholder="Search educational diagrams, mind maps, layouts..." />
+          <SearchBar darkHero={true} />
         </div>
 
         <div className="relative flex flex-col sm:flex-row items-center gap-4 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
@@ -74,7 +74,7 @@ export default function Home() {
           </Link>
           {!user && (
             <button
-              onClick={() => openAuth("Unlock Full Access", () => router.push("/visuals"))}
+              onClick={() => openAuth("signup", "Unlock Full Access", () => router.push("/visuals"))}
               className="w-full sm:w-auto px-8 py-4 rounded-md bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold flex items-center justify-center gap-2 hover:bg-white/20 transition-all shadow-sm active:scale-95"
             >
               Sign Up Free
