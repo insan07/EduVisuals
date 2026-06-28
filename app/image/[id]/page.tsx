@@ -157,7 +157,21 @@ export default function ImageDetailPage({ params }: PageProps) {
       setEditDescription(mappedImage.description || "");
       setIsLoading(false);
 
-      // 3. Increment view count
+      // 3. Track in localStorage for "Recently Seen" feature
+      try {
+        const key = "recently_seen_visuals";
+        let recentIds: string[] = JSON.parse(localStorage.getItem(key) || "[]");
+        // Remove if already exists, then push to front
+        recentIds = recentIds.filter(id => id !== currentId);
+        recentIds.unshift(currentId);
+        // Keep max 20 items
+        if (recentIds.length > 20) recentIds = recentIds.slice(0, 20);
+        localStorage.setItem(key, JSON.stringify(recentIds));
+      } catch (e) {
+        console.error("Failed to save to recently seen", e);
+      }
+
+      // 4. Increment view count
       await supabase.rpc('increment_view_count', { image_id: currentId });
 
       // 4. Fetch related visuals by subject

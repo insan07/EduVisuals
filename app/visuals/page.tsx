@@ -8,6 +8,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useAuthModal } from "@/store/useAuthModal";
 import { useCollectionModal } from "@/store/useCollectionModal";
 import SearchBar from "@/components/SearchBar";
+import DiscoveryHub from "@/components/DiscoveryHub";
 import {
   Filter,
   ChevronDown,
@@ -475,44 +476,51 @@ function SearchResultsContent() {
           </div>
         )}
 
-        {/* ── Empty State ── */}
-        {!isLoading && visuals.length === 0 && (
-          <EmptyState
-            hasFilters={activeFilterCount > 0 || !!q}
-            onClearFilters={clearAllFilters}
-            userRole={userRole}
-          />
-        )}
-
-        {/* ── Visuals Grid ── */}
-        {!isLoading && visuals.length > 0 && (
+        {/* ── Conditional Render: Discovery Hub vs Search Results ── */}
+        {!isLoading && activeFilterCount === 0 && !q ? (
+          <DiscoveryHub />
+        ) : (
           <>
-            <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-4 space-y-3 md:space-y-4">
-              {visuals.map((visual) => (
-                <div key={visual.id} style={{ breakInside: "avoid" }}>
-                  <VisualCard
-                    visual={visual}
-                    isSaved={savedIds.has(visual.id)}
-                    onSave={() => toggleSave(visual.id, visual.title)}
-                    onDownload={() => handleDownload(visual)}
-                  />
-                </div>
-              ))}
-            </div>
+            {/* ── Empty State ── */}
+            {!isLoading && visuals.length === 0 && (
+              <EmptyState
+                hasFilters={activeFilterCount > 0 || !!q}
+                onClearFilters={clearAllFilters}
+                userRole={userRole}
+              />
+            )}
 
-            {/* Load More placeholder — future pagination */}
-            {visuals.length >= 50 && (
-              <div style={{ textAlign: "center", marginTop: "2rem" }}>
-                <button
-                  style={{
-                    background: "#073238", color: "#ffffff", border: "none",
-                    borderRadius: "0.75rem", padding: "0.75rem 2rem",
-                    fontSize: "0.9rem", fontWeight: 600, cursor: "pointer",
-                  }}
-                >
-                  Load More
-                </button>
-              </div>
+            {/* ── Visuals Grid ── */}
+            {!isLoading && visuals.length > 0 && (
+              <>
+                <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-4 space-y-3 md:space-y-4">
+                  {visuals.map((visual) => (
+                    <div key={visual.id} style={{ breakInside: "avoid" }}>
+                      <VisualCard
+                        visual={visual}
+                        isSaved={savedIds.has(visual.id)}
+                        onSave={() => toggleSave(visual.id, visual.title)}
+                        onDownload={() => handleDownload(visual)}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Load More placeholder — future pagination */}
+                {visuals.length >= 50 && (
+                  <div style={{ textAlign: "center", marginTop: "2rem" }}>
+                    <button
+                      style={{
+                        background: "#073238", color: "#ffffff", border: "none",
+                        borderRadius: "0.75rem", padding: "0.75rem 2rem",
+                        fontSize: "0.9rem", fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      Load More
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
