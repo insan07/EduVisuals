@@ -149,7 +149,15 @@ export async function GET(request: NextRequest) {
       }
       
       const textWords = textLower.split(/[\s,.-]+/);
-      const maxDist = qLower.length <= 4 ? 1 : 2;
+      
+      // Dynamic max distance based on word length to prevent massive false positives
+      // e.g., if qLower is "6", we don't want it matching "a" (dist 1).
+      let maxDist = 0;
+      if (qLower.length >= 3 && qLower.length <= 5) maxDist = 1;
+      else if (qLower.length > 5) maxDist = 2;
+
+      if (maxDist === 0) return 0;
+
       for (const tw of textWords) {
         if (Math.abs(tw.length - qLower.length) <= maxDist) {
           const dist = levenshtein(tw, qLower);
@@ -161,49 +169,65 @@ export async function GET(request: NextRequest) {
       return 0;
     }
 
-    // Flatten tags into subject/grade/type fields for frontend
-    let images = (data || []).map((img: any) => {
-      const tags = img.image_tags || [];
-      const subject = tags.find((t: any) => t.tag_type === "subject")?.tag || "General";
-      const grade = tags.find((t: any) => t.tag_type === "grade")?.tag || "General";
-      const type = tags.find((t: any) => t.tag_type === "type")?.tag || "Diagram";
-      const syllabus = tags.find((t: any) => t.tag_type === "syllabus")?.tag || "";
-      const medium = tags.find((t: any) => t.tag_type === "medium")?.tag || "";
-      
-      let searchScore = 0;
-      let matchCount = 0;
-      if (isMemorySearch && queryWords.length > 0) {
-        for (const word of queryWords) {
-          let wordScore = 0;
-          wordScore += getFuzzyScore(img.title, word, 5);
-          wordScore += getFuzzyScore(subject, word, 3);
-          wordScore += getFuzzyScore(grade, word, 3);
-          
-          // Try matching type directly, and also stripped of spaces (for "mindmap" vs "mind map")
-          const typeNoSpace = type.replace(/\s+/g, '').toLowerCase();
-          const wordLower = word.toLowerCase();
-          wordScore += getFuzzyScore(type, word, 4);
-          if (typeNoSpace.includes(wordLower) || wordLower.includes(typeNoSpace)) {
-            wordScore += 4;
-          }
-          
-          wordScore += getFuzzyScore(syllabus, word, 3);
-          wordScore += getFuzzyScore(medium, word, 3);
-          wordScore += getFuzzyScore(img.description, word, 1);
-          
-          if (wordScore > 0) {
-            matchCount++;
-          }
-          searchScore += wordScore;
-        }
+      // Base normalized query for exact phrase matching
+      const exactQuery = q.trim().toLowerCase();
+
+      let images = (data || []).map((img: any) => {
+        const tags = img.image_tags || [];
+        const subject = tags.find((t: any) => t.tag_type === "subject")?.tag || "General";
+        const grade = tags.find((t: any) => t.tag_type === "grade")?.tag || "General";
+        const type = tags.find((t: any) => t.tag_type === "type")?.tag || "Diagram";
+        const syllabus = tags.find((t: any) => t.tag_type === "syllabus")?.tag || "";
+        const medium = tags.find((t: any) => t.tag_type === "medium")?.tag || "";
         
-        if (matchCount === 0) {
-          searchScore = -1; // No words matched at all
-        } else {
-          // Bonus multiplier for matching multiple different words in the query
-          searchScore *= matchCount;
+        let searchScore = 0;
+        let matchCount = 0;
+        
+        if (isMemorySearch && queryWords.length > 0) {
+          // 1. EXACT PHRASE BONUS
+          // If the exact phrase appears in the title or tags, give a massive boost.
+          if (img.title.toLowerCase().includes(exactQuery)) searchScore += 100;
+          if (subject.toLowerCase().includes(exactQuery)) searchScore += 80;
+          if (grade.toLowerCase().includes(exactQuery)) searchScore += 80;
+          if (img.description && img.description.toLowerCase().includes(exactQuery)) searchScore += 40;
+
+          // 2. INDIVIDUAL WORD SCORING
+          for (let i = 0; i < queryWords.length; i++) {
+            const word = queryWords[i];
+            let wordScore = 0;
+            
+            wordScore += getFuzzyScore(img.title, word, 5);
+            wordScore += getFuzzyScore(subject, word, 4);
+            wordScore += getFuzzyScore(grade, word, 4);
+            
+            const typeNoSpace = type.replace(/\s+/g, '').toLowerCase();
+            const wordLower = word.toLowerCase();
+            wordScore += getFuzzyScore(type, word, 4);
+            if (typeNoSpace.includes(wordLower) || wordLower.includes(typeNoSpace)) {
+              wordScore += 4;
+            }
+            
+            wordScore += getFuzzyScore(syllabus, word, 3);
+            wordScore += getFuzzyScore(medium, word, 3);
+            wordScore += getFuzzyScore(img.description, word, 1);
+            
+            if (wordScore > 0) {
+              matchCount++;
+              // Give a slight positional boost to the first few words typed by the user
+              const positionalBoost = 1 + ((queryWords.length - i) * 0.15);
+              searchScore += (wordScore * positionalBoost);
+            }
+          }
+          
+          if (matchCount === 0 && searchScore === 0) {
+            searchScore = -1; // No words matched at all
+          } else {
+            // 3. EXPONENTIAL MATCH MULTIPLIER
+            // If they typed 4 words, an image that matches all 4 gets a massive 16x multiplier
+            // An image that only matches 1 word gets a 1x multiplier.
+            searchScore *= (matchCount * matchCount);
+          }
         }
-      }
 
       return {
         id: img.id,
