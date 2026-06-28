@@ -161,6 +161,35 @@ export default function ContributorUploadPortal() {
   const [isPremium, setIsPremium] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [aiPaste, setAiPaste] = useState("");
+
+  const handleSmartPaste = (pastedText: string) => {
+    const titleMatch = pastedText.match(/Title:\s*([\s\S]*?)(?=Description:|Syllabus:|Tags:|Subject:|Type:|Medium:|Grades:|$)/i);
+    const descMatch = pastedText.match(/Description:\s*([\s\S]*?)(?=Title:|Syllabus:|Tags:|Subject:|Type:|Medium:|Grades:|$)/i);
+    const syllMatch = pastedText.match(/Syllabus:\s*([\s\S]*?)(?=Title:|Description:|Tags:|Subject:|Type:|Medium:|Grades:|$)/i);
+    const subjMatch = pastedText.match(/Subject:\s*([\s\S]*?)(?=Title:|Description:|Tags:|Syllabus:|Type:|Medium:|Grades:|$)/i);
+    const typeMatch = pastedText.match(/Type:\s*([\s\S]*?)(?=Title:|Description:|Tags:|Syllabus:|Subject:|Medium:|Grades:|$)/i);
+    const medMatch = pastedText.match(/Medium:\s*([\s\S]*?)(?=Title:|Description:|Tags:|Syllabus:|Subject:|Type:|Grades:|$)/i);
+    const gradesMatch = pastedText.match(/Grades:\s*([\s\S]*?)(?=Title:|Description:|Tags:|Syllabus:|Subject:|Type:|Medium:|$)/i);
+    const tagsMatch = pastedText.match(/Tags:\s*([\s\S]*?)(?=Title:|Description:|Syllabus:|Subject:|Type:|Medium:|Grades:|$)/i);
+
+    if (titleMatch) setTitle(titleMatch[1].trim());
+    if (descMatch) setDescription(descMatch[1].trim());
+    if (syllMatch) setSyllabus(syllMatch[1].trim());
+    if (subjMatch) setSubject(subjMatch[1].trim());
+    if (typeMatch) setType(typeMatch[1].trim());
+    if (medMatch) setMedium(medMatch[1].trim());
+    
+    if (gradesMatch) {
+       const parsedGrades = gradesMatch[1].split(',').map(g => g.trim()).filter(Boolean);
+       setSelectedGrades(parsedGrades);
+    }
+    
+    if (tagsMatch) {
+      const parsedTags = tagsMatch[1].split(',').map(t => t.trim()).filter(Boolean);
+      setTags(parsedTags.slice(0, 10)); // Keep up to 10 tags
+    }
+  };
 
   // File states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -429,7 +458,7 @@ export default function ContributorUploadPortal() {
       setUploading(false);
 
       // Reset form to upload another image
-      setTitle(""); setDescription(""); setTags([]);
+      setTitle(""); setDescription(""); setTags([]); setAiPaste("");
       setSelectedFile(null); setThumbnailFile(null);
       setFilePreview(null); setThumbnailPreview(null);
       setStep(1); setUploadProgress(0);
@@ -530,6 +559,23 @@ export default function ContributorUploadPortal() {
               {/* === STEP 1: METADATA === */}
               {step === 1 && (
                 <div className="flex flex-col gap-5">
+                  {/* AI Smart Paste Section */}
+                  <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 flex flex-col gap-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-indigo-700 uppercase tracking-wide">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Auto-Fill with AI
+                    </label>
+                    <textarea
+                      value={aiPaste}
+                      onChange={(e) => {
+                        setAiPaste(e.target.value);
+                        handleSmartPaste(e.target.value);
+                      }}
+                      placeholder="Paste AI generated text here (Title:, Description:, Syllabus:, Tags:)..."
+                      className="w-full bg-white border border-indigo-200 text-brand placeholder:text-indigo-300 text-xs px-4 py-3 rounded-lg outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all resize-none min-h-[80px]"
+                    />
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="md:col-span-2 flex flex-col gap-1.5">
                       <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Visual Title *</label>
