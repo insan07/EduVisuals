@@ -75,7 +75,7 @@ export default function DiscoveryHub() {
   }
 
   return (
-    <div className="flex flex-col gap-12 mt-4 pb-12">
+    <div className="flex flex-col gap-8 mt-2 pb-8">
       
       {/* RECENTLY SEEN */}
       {recentlySeen.length > 0 && (
@@ -88,7 +88,7 @@ export default function DiscoveryHub() {
           </div>
           <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar">
             {recentlySeen.map(visual => (
-              <div key={visual.id} className="w-[280px] md:w-[320px] flex-shrink-0 snap-start">
+              <div key={visual.id} className="w-[200px] md:w-[240px] flex-shrink-0 snap-start">
                 <ImageCard
                   id={visual.id}
                   title={visual.title}
@@ -116,7 +116,7 @@ export default function DiscoveryHub() {
           </div>
           <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar">
             {suggestions.map(visual => (
-              <div key={visual.id} className="w-[280px] md:w-[320px] flex-shrink-0 snap-start">
+              <div key={visual.id} className="w-[200px] md:w-[240px] flex-shrink-0 snap-start">
                 <ImageCard
                   id={visual.id}
                   title={visual.title}
@@ -142,17 +142,17 @@ export default function DiscoveryHub() {
               Your Collections
             </h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
             {collections.map(col => (
               <Link 
                 key={col.id} 
                 href={`/collections/${col.id}`}
-                className="group bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-[#073238]/30 transition-all flex flex-col items-center text-center gap-3"
+                className="group bg-white border border-gray-100 p-3 rounded-xl shadow-sm hover:shadow-md hover:border-[#073238]/30 transition-all flex flex-col items-center text-center gap-2"
               >
-                <div className="w-16 h-16 bg-[#f8f9fa] group-hover:bg-[#e8f5f6] rounded-full flex items-center justify-center transition-colors">
-                  <Folder className="w-8 h-8 text-[#073238]" />
+                <div className="w-12 h-12 bg-[#f8f9fa] group-hover:bg-[#e8f5f6] rounded-full flex items-center justify-center transition-colors">
+                  <Folder className="w-6 h-6 text-[#073238]" />
                 </div>
-                <h3 className="font-bold text-[#00393c] text-sm line-clamp-1">{col.name}</h3>
+                <h3 className="font-bold text-[#00393c] text-xs line-clamp-1">{col.name}</h3>
               </Link>
             ))}
           </div>
