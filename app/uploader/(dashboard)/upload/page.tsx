@@ -511,8 +511,8 @@ export default function ContributorUploadPortal() {
 
       // Reset form to upload another image
       setTitle(""); setDescription(""); setTags([]); setAiPaste("");
-      setSelectedFile(null); setThumbnailFile(null);
-      setFilePreview(null); setThumbnailPreview(null);
+      setSelectedFiles([]); setThumbnailFile(null);
+      setFilePreviews([]); setThumbnailPreview(null);
       setStep(1); setUploadProgress(0);
 
     } catch (err: any) {

@@ -36,6 +36,7 @@ const ImageCardComponent: React.FC<ImageCardProps> = ({
 }) => {
   const [saved, setSaved] = useState(isSaved);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const handleSaveClick = (e: React.MouseEvent) => {
     e.preventDefault();
