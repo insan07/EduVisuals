@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Folder, Clock, Sparkles, ChevronRight, FileImage } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import ImageCard from "@/components/ImageCard";
-import { useCollectionModal } from "@/store/useCollectionModal";
 
 export default function DiscoveryHub() {
   const [recentlySeen, setRecentlySeen] = useState<any[]>([]);
@@ -17,8 +17,9 @@ export default function DiscoveryHub() {
 
       // 1. Fetch Recently Seen from localStorage
       try {
-        const recentIds = JSON.parse(localStorage.getItem("recently_seen_visuals") || "[]");
-        if (recentIds.length > 0) {
+        const recentViews = JSON.parse(localStorage.getItem("recently_seen_visuals") || "[]");
+        if (recentViews.length > 0) {
+          const recentIds = recentViews.map((item: any) => typeof item === 'string' ? item : item.id);
           const { data: recentImages } = await supabase
             .from("images")
             .select("*, image_tags(*)")
@@ -26,7 +27,14 @@ export default function DiscoveryHub() {
           
           if (recentImages) {
             // Sort to match localStorage order
-            const sorted = recentIds.map((id: string) => recentImages.find(img => img.id === id)).filter(Boolean);
+            const sorted = recentViews.map((item: any) => {
+              const id = typeof item === 'string' ? item : item.id;
+              const img = recentImages.find(i => i.id === id);
+              if (img) {
+                return { ...img, viewedAt: item.viewedAt };
+              }
+              return null;
+            }).filter(Boolean);
             setRecentlySeen(sorted);
           }
         }
@@ -81,26 +89,40 @@ export default function DiscoveryHub() {
       {recentlySeen.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl md:text-2xl font-black text-[#00393c] flex items-center gap-2">
-              <Clock className="w-6 h-6 text-[#073238]" />
+            <h2 className="text-lg md:text-xl font-bold text-[#00393c] flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e8f5f6] to-[#d0ecee] flex items-center justify-center shadow-sm border border-[#073238]/10">
+                <Clock className="w-4 h-4 text-[#073238]" />
+              </div>
               Recently Viewed
             </h2>
           </div>
-          <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar">
-            {recentlySeen.map(visual => (
-              <div key={visual.id} className="w-[200px] md:w-[240px] flex-shrink-0 snap-start">
-                <ImageCard
-                  id={visual.id}
-                  title={visual.title}
-                  thumbnailUrl={visual.thumbnail_url || visual.file_url}
-                  subject={visual.subject || "General"}
-                  grade={visual.grade || "General"}
-                  type={visual.type || "Diagram"}
-                  isPremium={visual.is_premium || false}
-                  downloadCount={visual.download_count || 0}
-                />
-              </div>
-            ))}
+          <div className="flex overflow-x-auto gap-4 pb-4 snap-x">
+            {recentlySeen.map(visual => {
+              const subjectTag = visual.image_tags?.find((t: any) => t.tag_type === 'subject')?.tag;
+              const gradeTag = visual.image_tags?.find((t: any) => t.tag_type === 'grade')?.tag;
+              const typeTag = visual.image_tags?.find((t: any) => t.tag_type === 'type')?.tag;
+
+              return (
+                <div key={visual.id} className="w-[200px] md:w-[240px] flex-shrink-0 snap-start flex flex-col gap-2">
+                  <ImageCard
+                    id={visual.id}
+                    title={visual.title}
+                    thumbnailUrl={visual.thumbnail_url || visual.file_url}
+                    subject={subjectTag || "General"}
+                    grade={gradeTag || "General"}
+                    type={typeTag || "Diagram"}
+                    isPremium={visual.is_premium || false}
+                    downloadCount={visual.download_count || 0}
+                    hasMultipleImages={visual.additional_urls && visual.additional_urls.length > 0}
+                  />
+                  {visual.viewedAt && (
+                    <span className="text-[10px] text-gray-400 font-medium px-1">
+                      Opened {formatDistanceToNow(new Date(visual.viewedAt), { addSuffix: true })}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
@@ -109,26 +131,35 @@ export default function DiscoveryHub() {
       {suggestions.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl md:text-2xl font-black text-[#00393c] flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-[#073238]" />
+            <h2 className="text-lg md:text-xl font-bold text-[#00393c] flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e8f5f6] to-[#d0ecee] flex items-center justify-center shadow-sm border border-[#073238]/10">
+                <Sparkles className="w-4 h-4 text-[#073238]" />
+              </div>
               Suggestions for You
             </h2>
           </div>
-          <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar">
-            {suggestions.map(visual => (
-              <div key={visual.id} className="w-[200px] md:w-[240px] flex-shrink-0 snap-start">
-                <ImageCard
-                  id={visual.id}
-                  title={visual.title}
-                  thumbnailUrl={visual.thumbnail_url || visual.file_url}
-                  subject={visual.subject || "General"}
-                  grade={visual.grade || "General"}
-                  type={visual.type || "Diagram"}
-                  isPremium={visual.is_premium || false}
-                  downloadCount={visual.download_count || 0}
-                />
-              </div>
-            ))}
+          <div className="flex overflow-x-auto gap-4 pb-4 snap-x">
+            {suggestions.map(visual => {
+              const subjectTag = visual.image_tags?.find((t: any) => t.tag_type === 'subject')?.tag;
+              const gradeTag = visual.image_tags?.find((t: any) => t.tag_type === 'grade')?.tag;
+              const typeTag = visual.image_tags?.find((t: any) => t.tag_type === 'type')?.tag;
+
+              return (
+                <div key={visual.id} className="w-[200px] md:w-[240px] flex-shrink-0 snap-start">
+                  <ImageCard
+                    id={visual.id}
+                    title={visual.title}
+                    thumbnailUrl={visual.thumbnail_url || visual.file_url}
+                    subject={subjectTag || "General"}
+                    grade={gradeTag || "General"}
+                    type={typeTag || "Diagram"}
+                    isPremium={visual.is_premium || false}
+                    downloadCount={visual.download_count || 0}
+                    hasMultipleImages={visual.additional_urls && visual.additional_urls.length > 0}
+                  />
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
@@ -137,8 +168,10 @@ export default function DiscoveryHub() {
       {collections.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl md:text-2xl font-black text-[#00393c] flex items-center gap-2">
-              <Folder className="w-6 h-6 text-[#073238]" />
+            <h2 className="text-lg md:text-xl font-bold text-[#00393c] flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e8f5f6] to-[#d0ecee] flex items-center justify-center shadow-sm border border-[#073238]/10">
+                <Folder className="w-4 h-4 text-[#073238]" />
+              </div>
               Your Collections
             </h2>
           </div>
@@ -159,15 +192,7 @@ export default function DiscoveryHub() {
         </section>
       )}
 
-      <style>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+
     </div>
   );
 }

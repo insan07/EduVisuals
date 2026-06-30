@@ -23,6 +23,7 @@ import {
   Lock,
   Sparkles,
   ArrowLeft,
+  ChevronLeft,
   BookOpen,
   FileImage,
   MoreHorizontal,
@@ -48,6 +49,7 @@ export default function ImageDetailPage({ params }: PageProps) {
   const [visual, setVisual] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isNotFound, setIsNotFound] = useState(false);
+  const [creator, setCreator] = useState<any>(null);
   
   const [userState, setUserState] = useState<"guest" | "free" | "premium">("guest");
   const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
@@ -78,6 +80,7 @@ export default function ImageDetailPage({ params }: PageProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const [relatedVisuals, setRelatedVisuals] = useState<any[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Fetch real data
   useEffect(() => {
@@ -155,18 +158,48 @@ export default function ImageDetailPage({ params }: PageProps) {
       setVisual(mappedImage);
       setEditTitle(mappedImage.title || "");
       setEditDescription(mappedImage.description || "");
+
+      // Fetch creator
+      let creatorProfile = null;
+      if (mappedImage.uploaded_by) {
+        const { data: uploader } = await supabase
+          .from("uploader_profiles")
+          .select("display_name, highest_qualification, short_bio, portfolio_url")
+          .eq("id", mappedImage.uploaded_by)
+          .single();
+        
+        if (uploader) {
+          creatorProfile = { ...uploader, id: mappedImage.uploaded_by };
+        } else {
+          // fallback to profiles
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", mappedImage.uploaded_by)
+            .single();
+          creatorProfile = { display_name: prof?.full_name || "EduVisuals Creator", id: mappedImage.uploaded_by };
+        }
+      }
+      setCreator(creatorProfile);
       setIsLoading(false);
 
       // 3. Track in localStorage for "Recently Seen" feature
       try {
         const key = "recently_seen_visuals";
-        let recentIds: string[] = JSON.parse(localStorage.getItem(key) || "[]");
+        let recentViews = JSON.parse(localStorage.getItem(key) || "[]");
+        
+        // Convert old array of strings to array of objects if needed
+        if (recentViews.length > 0 && typeof recentViews[0] === 'string') {
+           recentViews = recentViews.map((id: string) => ({ id, viewedAt: new Date().toISOString() }));
+        }
+        
         // Remove if already exists, then push to front
-        recentIds = recentIds.filter(id => id !== currentId);
-        recentIds.unshift(currentId);
+        recentViews = recentViews.filter((item: any) => item.id !== currentId);
+        recentViews.unshift({ id: currentId, viewedAt: new Date().toISOString() });
+        
         // Keep max 20 items
-        if (recentIds.length > 20) recentIds = recentIds.slice(0, 20);
-        localStorage.setItem(key, JSON.stringify(recentIds));
+        if (recentViews.length > 20) recentViews = recentViews.slice(0, 20);
+        localStorage.setItem(key, JSON.stringify(recentViews));
       } catch (e) {
         console.error("Failed to save to recently seen", e);
       }
@@ -506,28 +539,74 @@ export default function ImageDetailPage({ params }: PageProps) {
               )}
 
               {/* Main Visual Display */}
-              {visual.thumbnail_url || visual.file_url ? (
-                <img 
-                  src={visual.thumbnail_url || visual.file_url} 
-                  alt={visual.title} 
-                  onContextMenu={(e) => e.preventDefault()}
-                  onDragStart={(e) => e.preventDefault()}
-                  draggable={false} 
-                  className="w-full h-full object-contain pointer-events-none drop-shadow-md rounded-2xl md:rounded-none" 
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    if (target.src !== visual.file_url && visual.file_url) {
-                      target.src = visual.file_url;
-                    }
-                  }}
-                />
-              ) : (
-                <FileImage size={80} className="text-brand-faint" />
-              )}
+              {(() => {
+                const imageUrls = [visual.file_url, ...(visual.additional_urls || [])].filter(Boolean);
+                const currentImgUrl = imageUrls[currentImageIndex] || visual.thumbnail_url || visual.file_url;
+                const hasMultiple = imageUrls.length > 1;
+
+                return (
+                  <>
+                    {currentImgUrl ? (
+                      <img 
+                        src={currentImgUrl} 
+                        alt={visual.title} 
+                        onContextMenu={(e) => e.preventDefault()}
+                        onDragStart={(e) => e.preventDefault()}
+                        draggable={false} 
+                        className="w-full h-full object-contain pointer-events-none drop-shadow-md rounded-2xl md:rounded-none" 
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (target.src !== visual.file_url && visual.file_url) {
+                            target.src = visual.file_url;
+                          }
+                        }}
+                      />
+                    ) : (
+                      <FileImage size={80} className="text-brand-faint" />
+                    )}
+
+                    {/* Navigation Controls */}
+                    {hasMultiple && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : imageUrls.length - 1));
+                          }}
+                          className="absolute left-2 md:left-4 z-30 bg-white/80 hover:bg-white text-brand p-2 rounded-full shadow-md backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ChevronLeft size={24} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentImageIndex((prev) => (prev < imageUrls.length - 1 ? prev + 1 : 0));
+                          }}
+                          className="absolute right-2 md:right-4 z-30 bg-white/80 hover:bg-white text-brand p-2 rounded-full shadow-md backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ChevronRight size={24} />
+                        </button>
+
+                        {/* Image Indicator Dots */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                          {imageUrls.map((_, i) => (
+                            <div
+                              key={i}
+                              className={`w-1.5 h-1.5 rounded-full transition-all ${
+                                i === currentImageIndex ? "bg-white w-3" : "bg-white/50"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
 
               {/* Premium badge on image */}
               {visual.is_premium && (
-                <div className="absolute top-4 left-4 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-md px-2.5 py-1.5 text-xs font-bold flex items-center gap-1 z-20 shadow-sm pointer-events-none select-none">
+                <div className="absolute top-4 left-4 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-md px-2.5 py-1.5 text-xs font-bold flex items-center gap-1 z-30 shadow-sm pointer-events-none select-none">
                   <Crown size={14} /> Premium
                 </div>
               )}
@@ -711,6 +790,36 @@ export default function ImageDetailPage({ params }: PageProps) {
                 </div>
               </div>
             </div>
+
+            <hr className="border-brand-border" />
+
+            {/* CREATOR CARD */}
+            {creator && (
+              <div className="flex flex-col gap-3">
+                <h3 className="font-extrabold text-xs uppercase tracking-wider text-brand">
+                  Uploaded By
+                </h3>
+                <div className="flex items-center justify-between p-4 bg-white border border-brand-border rounded-2xl hover:border-brand/30 transition-colors shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg flex-shrink-0">
+                      {creator.display_name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-brand text-sm line-clamp-1">{creator.display_name}</h4>
+                      {creator.highest_qualification && (
+                        <p className="text-[10px] font-bold text-brand-muted line-clamp-1">{creator.highest_qualification}</p>
+                      )}
+                    </div>
+                  </div>
+                  <Link 
+                    href={`/creator/${creator.id}`}
+                    className="text-xs font-bold text-brand bg-[#f8f9fa] hover:bg-[#e9ecef] px-4 py-2 rounded-xl transition-colors border border-gray-200"
+                  >
+                    View Profile
+                  </Link>
+                </div>
+              </div>
+            )}
 
             <hr className="border-brand-border" />
 

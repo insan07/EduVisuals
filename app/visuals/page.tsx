@@ -19,6 +19,7 @@ import {
   ArrowRight,
   FileImage,
   Upload,
+  Layers,
 } from "lucide-react";
 
 /* ─────────────────────────────── Types ─────────────────────────────── */
@@ -40,6 +41,7 @@ interface Visual {
   type: string;
   syllabus: string;
   medium: string;
+  additional_urls?: string[];
 }
 
 /* ─────────────────────────── Static Filter Options ─────────────────────────── */
@@ -244,167 +246,157 @@ function SearchResultsContent() {
     <div style={{ background: "#f8f9fa", minHeight: "100vh" }}>
       <div className="mx-auto w-full max-w-[1440px] pt-20 md:pt-24 px-3 md:px-6 pb-8">
         
-        {/* ── Search Bar and Tabs ── */}
-        <div className="bg-white p-3 md:p-5 rounded-2xl border border-[rgba(0,57,60,0.08)] mb-4 md:mb-5 flex flex-col gap-3 md:gap-4">
+        {/* ── Search Bar and Filters ── */}
+        <div className="bg-white p-3 md:p-5 rounded-2xl border border-[rgba(0,57,60,0.08)] mb-4 md:mb-5 flex flex-col gap-3 md:gap-4 shadow-sm">
+          
+          {/* Top row: Search Bar */}
           <SearchBar 
             initialValue={q} 
             onSubmit={handleSearchSubmit} 
             className="w-full"
           />
 
-          {/* ── Content Type Tabs & Sort Dropdown ── */}
-          <div className="flex w-full items-center justify-between flex-wrap gap-3">
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              {(["all", "free", "premium"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => updateParams({ content: tab === "all" ? null : tab })}
-                  style={{
-                    padding: "0.35rem 1rem", borderRadius: "2rem",
-                    border: contentType === tab ? "none" : "1px solid rgba(0,57,60,0.15)",
-                    background: contentType === tab ? "#073238" : "transparent",
-                    color: contentType === tab ? "#ffffff" : "#00393c",
-                    fontSize: "0.82rem", fontWeight: 600, cursor: "pointer",
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {tab === "premium" && <Crown size={12} style={{ display: "inline", marginRight: "0.3rem", verticalAlign: "middle" }} />}
-                  {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            {/* Sort dropdown */}
-            <div className="relative flex-shrink-0 w-full sm:w-auto">
-              <select
-                value={sortBy}
-                onChange={(e) => updateParams({ sort: e.target.value === "latest" ? null : e.target.value })}
-                className="w-full sm:w-auto appearance-none bg-white border border-[rgba(0,57,60,0.15)] rounded-full py-1.5 pl-3 pr-8 text-sm text-[#00393c] cursor-pointer font-bold outline-none hover:bg-gray-50 transition-colors"
-              >
-                <option value="latest">Latest</option>
-                <option value="relevant">Relevant</option>
-                <option value="downloaded">Most Downloaded</option>
-              </select>
-              <ChevronDown
-                size={14}
-                style={{ position: "absolute", right: "0.8rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#073238" }}
-              />
-            </div>
-          </div>
-
-          {/* ── Filters and Sort Container ── */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2 pt-2 border-t border-gray-100">
+          {/* Bottom row: Tabs, Filters, Sort */}
+          <div className="flex flex-wrap items-center justify-between gap-3 md:gap-4">
             
-            {/* Desktop Filter Pills */}
-            <div className="hidden md:flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold text-gray-500 mr-1 flex-shrink-0">Filters:</span>
-              
-              <FilterDropdown 
-                title="Grade" 
-                options={GRADES} 
-                active={activeGrades} 
-                isOpen={activeDropdown === "Grade"} 
-                onToggleDropdown={() => setActiveDropdown(activeDropdown === "Grade" ? null : "Grade")} 
-                onClose={() => setActiveDropdown(null)}
-                onToggleOption={(v) => toggleFilter("grade", v, activeGrades)} 
-              />
-              
-              <FilterDropdown 
-                title="Subject" 
-                options={SUBJECTS} 
-                active={activeSubjects} 
-                isOpen={activeDropdown === "Subject"} 
-                onToggleDropdown={() => setActiveDropdown(activeDropdown === "Subject" ? null : "Subject")} 
-                onClose={() => setActiveDropdown(null)}
-                onToggleOption={(v) => toggleFilter("subject", v, activeSubjects)} 
-              />
+            <div className="flex items-center flex-wrap gap-3 w-full md:w-auto">
+              {/* Content Tabs (All, Free, Premium) - Restored Old Design */}
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                {(["all", "free", "premium"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => updateParams({ content: tab === "all" ? null : tab })}
+                    style={{
+                      padding: "0.35rem 1rem", borderRadius: "2rem",
+                      border: contentType === tab ? "none" : "1px solid rgba(0,57,60,0.15)",
+                      background: contentType === tab ? "#073238" : "transparent",
+                      color: contentType === tab ? "#ffffff" : "#00393c",
+                      fontSize: "0.82rem", fontWeight: 600, cursor: "pointer",
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {tab === "premium" && <Crown size={12} style={{ display: "inline", marginRight: "0.3rem", verticalAlign: "middle" }} />}
+                    {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
 
-              <FilterDropdown 
-                title="Type" 
-                options={TYPES} 
-                active={activeTypes} 
-                isOpen={activeDropdown === "Type"} 
-                onToggleDropdown={() => setActiveDropdown(activeDropdown === "Type" ? null : "Type")} 
-                onClose={() => setActiveDropdown(null)}
-                onToggleOption={(v) => toggleFilter("type", v, activeTypes)} 
-              />
+              <div className="hidden md:block w-px h-6 bg-gray-200"></div>
 
-              <FilterDropdown 
-                title="Syllabus" 
-                options={SYLLABUSES} 
-                active={activeSyllabi} 
-                isOpen={activeDropdown === "Syllabus"} 
-                onToggleDropdown={() => setActiveDropdown(activeDropdown === "Syllabus" ? null : "Syllabus")} 
-                onClose={() => setActiveDropdown(null)}
-                onToggleOption={(v) => toggleFilter("syllabus", v, activeSyllabi)} 
-              />
-
-              <FilterDropdown 
-                title="Medium" 
-                options={MEDIUMS} 
-                active={activeMediums} 
-                isOpen={activeDropdown === "Medium"} 
-                onToggleDropdown={() => setActiveDropdown(activeDropdown === "Medium" ? null : "Medium")} 
-                onClose={() => setActiveDropdown(null)}
-                onToggleOption={(v) => toggleFilter("medium", v, activeMediums)} 
-              />
-
-              {activeFilterCount > 0 && (
-                <button
-                  onClick={clearAllFilters}
-                  className="ml-1 flex items-center gap-1 text-xs font-semibold text-red-500 hover:bg-red-50 px-3 py-2 rounded-full transition-colors flex-shrink-0"
-                >
-                  <X size={14} /> Clear ({activeFilterCount})
-                </button>
-              )}
-            </div>
-
-            {/* Mobile Main Filter Button */}
-            <div className="md:hidden w-full relative">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setActiveDropdown(activeDropdown === "MobileFilters" ? null : "MobileFilters")}
-                  className={cn(
-                    "flex-1 flex items-center justify-between px-4 py-2.5 rounded-xl border font-semibold shadow-sm transition-colors",
-                    activeDropdown === "MobileFilters" || activeFilterCount > 0 ? "border-[#073238] bg-[#073238]/5 text-[#073238]" : "border-gray-200 bg-white text-gray-700"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <Filter size={16} />
-                    <span>Filters</span>
-                    {activeFilterCount > 0 && (
-                      <span className="bg-[#073238] text-white text-xs px-2 py-0.5 rounded-full min-w-[24px] text-center">
-                        {activeFilterCount}
-                      </span>
-                    )}
-                  </div>
-                  <ChevronDown size={16} className={cn("transition-transform", activeDropdown === "MobileFilters" && "rotate-180")} />
-                </button>
+              {/* Desktop Filters - Using flex-wrap instead of overflow-x to fix dropdown clipping */}
+              <div className="hidden md:flex flex-wrap items-center gap-2">
+                <FilterDropdown 
+                  title="Grade" 
+                  options={GRADES} 
+                  active={activeGrades} 
+                  isOpen={activeDropdown === "Grade"} 
+                  onToggleDropdown={() => setActiveDropdown(activeDropdown === "Grade" ? null : "Grade")} 
+                  onClose={() => setActiveDropdown(null)}
+                  onToggleOption={(v) => toggleFilter("grade", v, activeGrades)} 
+                />
+                <FilterDropdown 
+                  title="Subject" 
+                  options={SUBJECTS} 
+                  active={activeSubjects} 
+                  isOpen={activeDropdown === "Subject"} 
+                  onToggleDropdown={() => setActiveDropdown(activeDropdown === "Subject" ? null : "Subject")} 
+                  onClose={() => setActiveDropdown(null)}
+                  onToggleOption={(v) => toggleFilter("subject", v, activeSubjects)} 
+                />
+                <FilterDropdown 
+                  title="Type" 
+                  options={TYPES} 
+                  active={activeTypes} 
+                  isOpen={activeDropdown === "Type"} 
+                  onToggleDropdown={() => setActiveDropdown(activeDropdown === "Type" ? null : "Type")} 
+                  onClose={() => setActiveDropdown(null)}
+                  onToggleOption={(v) => toggleFilter("type", v, activeTypes)} 
+                />
+                <FilterDropdown 
+                  title="Syllabus" 
+                  options={SYLLABUSES} 
+                  active={activeSyllabi} 
+                  isOpen={activeDropdown === "Syllabus"} 
+                  onToggleDropdown={() => setActiveDropdown(activeDropdown === "Syllabus" ? null : "Syllabus")} 
+                  onClose={() => setActiveDropdown(null)}
+                  onToggleOption={(v) => toggleFilter("syllabus", v, activeSyllabi)} 
+                />
+                <FilterDropdown 
+                  title="Medium" 
+                  options={MEDIUMS} 
+                  active={activeMediums} 
+                  isOpen={activeDropdown === "Medium"} 
+                  onToggleDropdown={() => setActiveDropdown(activeDropdown === "Medium" ? null : "Medium")} 
+                  onClose={() => setActiveDropdown(null)}
+                  onToggleOption={(v) => toggleFilter("medium", v, activeMediums)} 
+                />
+                
                 {activeFilterCount > 0 && (
                   <button
                     onClick={clearAllFilters}
-                    className="flex-shrink-0 px-3 flex items-center justify-center rounded-xl bg-red-50 text-red-500 font-bold border border-red-100"
+                    className="ml-1 flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                    title="Clear all filters"
                   >
-                    <X size={18} />
+                    <X size={16} />
                   </button>
                 )}
               </div>
-
-              {activeDropdown === "MobileFilters" && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 flex flex-col gap-5 max-h-[60vh] overflow-y-auto">
-                  
-                  <MobileFilterGroup title="Grade" options={GRADES} active={activeGrades} onToggle={(v) => toggleFilter("grade", v, activeGrades)} />
-                  <MobileFilterGroup title="Subject" options={SUBJECTS} active={activeSubjects} onToggle={(v) => toggleFilter("subject", v, activeSubjects)} />
-                  <MobileFilterGroup title="Type" options={TYPES} active={activeTypes} onToggle={(v) => toggleFilter("type", v, activeTypes)} />
-                  <MobileFilterGroup title="Syllabus" options={SYLLABUSES} active={activeSyllabi} onToggle={(v) => toggleFilter("syllabus", v, activeSyllabi)} />
-                  <MobileFilterGroup title="Medium" options={MEDIUMS} active={activeMediums} onToggle={(v) => toggleFilter("medium", v, activeMediums)} />
-
-                </div>
-              )}
             </div>
 
-            {/* Sort dropdown moved to top row */}
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              {/* Mobile Filter Toggle */}
+              <div className="md:hidden flex-1">
+                <button
+                  onClick={() => setActiveDropdown(activeDropdown === "MobileFilters" ? null : "MobileFilters")}
+                  className={cn(
+                    "w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border font-bold text-sm transition-colors",
+                    activeDropdown === "MobileFilters" || activeFilterCount > 0 
+                      ? "border-[#073238] bg-[#073238]/5 text-[#073238]" 
+                      : "border-gray-200 bg-white text-gray-700"
+                  )}
+                >
+                  <Filter size={16} />
+                  <span>Filters {activeFilterCount > 0 && `(${activeFilterCount})`}</span>
+                </button>
+              </div>
+
+              {/* Sort Dropdown */}
+              <div className="relative flex-1 md:flex-none">
+                <select
+                  value={sortBy}
+                  onChange={(e) => updateParams({ sort: e.target.value === "latest" ? null : e.target.value })}
+                  className="w-full appearance-none bg-white border border-[rgba(0,57,60,0.15)] rounded-full py-1.5 pl-3 pr-8 text-sm text-[#00393c] cursor-pointer font-bold outline-none hover:bg-gray-50 transition-colors"
+                >
+                  <option value="latest">Latest</option>
+                  <option value="relevant">Relevant</option>
+                  <option value="downloaded">Most Downloaded</option>
+                </select>
+                <ChevronDown
+                  size={14}
+                  style={{ position: "absolute", right: "0.8rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#073238" }}
+                />
+              </div>
             </div>
+          </div>
+
+          {/* Mobile Filters Expanded View */}
+          {activeDropdown === "MobileFilters" && (
+            <div className="md:hidden mt-2 p-3 bg-gray-50 rounded-xl border border-gray-100 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#073238] text-sm">Filters</span>
+                {activeFilterCount > 0 && (
+                  <button onClick={clearAllFilters} className="text-red-500 text-xs font-bold flex items-center gap-1 bg-red-50 px-2 py-1 rounded-md">
+                    <X size={12} /> Clear
+                  </button>
+                )}
+              </div>
+              <MobileFilterGroup title="Grade" options={GRADES} active={activeGrades} onToggle={(v) => toggleFilter("grade", v, activeGrades)} />
+              <MobileFilterGroup title="Subject" options={SUBJECTS} active={activeSubjects} onToggle={(v) => toggleFilter("subject", v, activeSubjects)} />
+              <MobileFilterGroup title="Type" options={TYPES} active={activeTypes} onToggle={(v) => toggleFilter("type", v, activeTypes)} />
+              <MobileFilterGroup title="Syllabus" options={SYLLABUSES} active={activeSyllabi} onToggle={(v) => toggleFilter("syllabus", v, activeSyllabi)} />
+              <MobileFilterGroup title="Medium" options={MEDIUMS} active={activeMediums} onToggle={(v) => toggleFilter("medium", v, activeMediums)} />
+            </div>
+          )}
         </div>
 
         {/* ── Admin / Teacher Upload Banner ── */}
@@ -424,7 +416,7 @@ function SearchResultsContent() {
               </span>
             </div>
             <Link
-              href="/upload"
+              href="/uploader/upload"
               style={{
                 display: "flex", alignItems: "center", gap: "0.35rem",
                 background: "#4dd9e0", color: "#073238", textDecoration: "none",
@@ -754,6 +746,13 @@ function VisualCard({
         </div>
       )}
 
+      {/* ── Multiple Images badge (Always visible) ── */}
+      {visual.additional_urls && visual.additional_urls.length > 0 && (
+        <div className="absolute top-3 right-3 bg-brand/80 backdrop-blur-sm text-white rounded-md p-1.5 z-10 shadow-sm">
+          <Layers size={14} />
+        </div>
+      )}
+
       {/* ── Overlay (Hover only, hidden on mobile) ── */}
       <div className="card-overlay absolute inset-0 z-0 pointer-events-none opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 hidden md:flex flex-col justify-between bg-black/40">
 
@@ -787,11 +786,7 @@ function VisualCard({
                 {visual.subject}
               </span>
             )}
-            {visual.grade && (
-              <span className="bg-black/30 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded text-[10px] sm:text-xs font-medium">
-                {visual.grade}
-              </span>
-            )}
+
             {visual.type && (
               <span className="bg-black/30 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded text-[10px] sm:text-xs font-medium">
                 {visual.type}
@@ -890,7 +885,7 @@ function EmptyState({
 
         {(userRole === "admin" || userRole === "team_creator") && (
           <Link
-            href="/upload"
+            href="/uploader/upload"
             style={{
               display: "inline-flex", alignItems: "center", gap: "0.4rem",
               background: "#073238", color: "#ffffff", textDecoration: "none",

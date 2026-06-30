@@ -54,7 +54,7 @@ export default function CollectionPage({ params }: PageProps) {
         .select(`
           id,
           image_id,
-          images:image_id (*)
+          images:image_id (*, image_tags(*))
         `)
         .eq("collection_id", collectionId);
 
@@ -166,18 +166,24 @@ export default function CollectionPage({ params }: PageProps) {
           </div>
         ) : (
           <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-4 space-y-3 md:space-y-4">
-            {items.map((visual) => (
-              <div key={visual.id} className="relative group break-inside-avoid">
-                <ImageCard
-                  id={visual.id}
-                  title={visual.title}
-                  thumbnailUrl={visual.thumbnail_url || visual.file_url}
-                  subject={visual.subject || "General"}
-                  grade={visual.grade || "General"}
-                  type={visual.type || "Diagram"}
-                  isPremium={visual.is_premium || false}
-                  downloadCount={visual.download_count || 0}
-                />
+            {items.map((visual) => {
+              const subjectTag = visual.image_tags?.find((t: any) => t.tag_type === 'subject')?.tag;
+              const gradeTag = visual.image_tags?.find((t: any) => t.tag_type === 'grade')?.tag;
+              const typeTag = visual.image_tags?.find((t: any) => t.tag_type === 'type')?.tag;
+
+              return (
+                <div key={visual.id} className="relative group break-inside-avoid">
+                  <ImageCard
+                    id={visual.id}
+                    title={visual.title}
+                    thumbnailUrl={visual.thumbnail_url || visual.file_url}
+                    subject={subjectTag || "General"}
+                    grade={gradeTag || "General"}
+                    type={typeTag || "Diagram"}
+                    isPremium={visual.is_premium || false}
+                    downloadCount={visual.download_count || 0}
+                    hasMultipleImages={visual.additional_urls && visual.additional_urls.length > 0}
+                  />
                 {isOwner && (
                   <button
                     onClick={() => handleRemoveItem(visual.id)}
@@ -187,8 +193,9 @@ export default function CollectionPage({ params }: PageProps) {
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

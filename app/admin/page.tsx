@@ -178,6 +178,34 @@ export default function AdminDashboard() {
     if (data) setImages(data);
   };
 
+  const [stats, setStats] = useState({
+    totalVisuals: 0,
+    totalUsers: 0,
+    totalDownloads: 0,
+  });
+
+  const loadStats = async () => {
+    if (!isSupabaseConfigured()) return;
+    
+    try {
+      const [{ count: visualsCount }, { count: usersCount }, { data: imagesData }] = await Promise.all([
+        supabase.from('images').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('images').select('download_count')
+      ]);
+      
+      const downloads = imagesData?.reduce((acc, img) => acc + (img.download_count || 0), 0) || 0;
+      
+      setStats({
+        totalVisuals: visualsCount || 0,
+        totalUsers: usersCount || 0,
+        totalDownloads: downloads,
+      });
+    } catch (e) {
+      console.error("Failed to load stats", e);
+    }
+  };
+
   const [partners, setPartners] = useState<any[]>([]);
   
   const loadPartners = async () => {
@@ -207,6 +235,7 @@ export default function AdminDashboard() {
         setUser({ email: session.user.email || '', role, tier: 'Free' });
         loadImages();
         loadPartners();
+        loadStats();
       } else {
         // Fallback: localStorage
         const stored = localStorage.getItem('edu_user');
@@ -580,26 +609,18 @@ export default function AdminDashboard() {
             </div>
 
             {/* Metrics Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="bg-white border border-brand-border p-4 rounded-xl shadow-sm">
-                <span className="text-[9px] uppercase font-bold text-[rgba(0,57,60,0.5)]">Total Visuals</span>
-                <p className="text-lg font-black text-brand mt-1">10,432</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white border border-brand-border p-5 rounded-xl shadow-sm">
+                <span className="text-[10px] uppercase font-bold text-[rgba(0,57,60,0.5)]">Total Visuals</span>
+                <p className="text-2xl font-black text-brand mt-1">{stats.totalVisuals.toLocaleString()}</p>
               </div>
-              <div className="bg-white border border-brand-border p-4 rounded-xl shadow-sm">
-                <span className="text-[9px] uppercase font-bold text-[rgba(0,57,60,0.5)]">Total Users</span>
-                <p className="text-lg font-black text-brand mt-1">5,821</p>
+              <div className="bg-white border border-brand-border p-5 rounded-xl shadow-sm">
+                <span className="text-[10px] uppercase font-bold text-[rgba(0,57,60,0.5)]">Total Users</span>
+                <p className="text-2xl font-black text-brand mt-1">{stats.totalUsers.toLocaleString()}</p>
               </div>
-              <div className="bg-white border border-brand-border p-4 rounded-xl shadow-sm">
-                <span className="text-[9px] uppercase font-bold text-[rgba(0,57,60,0.5)]">Subscribers</span>
-                <p className="text-lg font-black text-brand mt-1">234</p>
-              </div>
-              <div className="bg-white border border-brand-border p-4 rounded-xl shadow-sm">
-                <span className="text-[9px] uppercase font-bold text-[rgba(0,57,60,0.5)]">DLs Today</span>
-                <p className="text-lg font-black text-brand mt-1">12,441</p>
-              </div>
-              <div className="bg-white border border-brand-border p-4 rounded-xl shadow-sm">
-                <span className="text-[9px] uppercase font-bold text-[rgba(0,57,60,0.5)]">Month Revenue</span>
-                <p className="text-lg font-black text-brand mt-1">{formatLKR(116766)}</p>
+              <div className="bg-white border border-brand-border p-5 rounded-xl shadow-sm">
+                <span className="text-[10px] uppercase font-bold text-[rgba(0,57,60,0.5)]">Total Downloads</span>
+                <p className="text-2xl font-black text-brand mt-1">{stats.totalDownloads.toLocaleString()}</p>
               </div>
             </div>
 

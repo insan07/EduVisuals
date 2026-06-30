@@ -149,6 +149,10 @@ export default function Navbar() {
     }
   };
 
+  if (pathname.startsWith("/uploader")) {
+    return null;
+  }
+
   return (
     <>
       <nav
@@ -236,9 +240,15 @@ export default function Navbar() {
               </div>
 
               <Link href="/pricing" className="hover:text-brand transition-colors">Pricing</Link>
-              <Link href="/partner" className="text-sm font-bold text-brand-muted hover:text-brand transition-colors flex items-center gap-1 ml-2">
-                <StarIcon className="w-4 h-4" /> Become a Partner
-              </Link>
+              {user ? (
+                <Link href="/uploader" className="text-sm font-bold text-brand hover:text-[#00393c] transition-colors flex items-center gap-1.5 ml-2 bg-[#f3f3f3] px-3 py-1.5 rounded-full border border-brand-border">
+                  <UploadIcon className="w-3.5 h-3.5" /> Upload Visual
+                </Link>
+              ) : (
+                <button onClick={() => useAuthModal.getState().open("signup")} className="text-sm font-bold text-brand hover:text-[#00393c] transition-colors flex items-center gap-1.5 ml-2 bg-[#f3f3f3] px-3 py-1.5 rounded-full border border-brand-border cursor-pointer">
+                  <UploadIcon className="w-3.5 h-3.5" /> Upload Visual
+                </button>
+              )}
             </div>
           </div>
 
@@ -307,26 +317,16 @@ export default function Navbar() {
                         ))}
                       </div>
 
-                      {/* Creator or Admin actions */}
-                      {(user.role === "admin" || user.role === "moderator" || user.role === "team_creator") && (
+                      {/* Admin actions */}
+                      {(user.role === "admin" || user.role === "moderator") && (
                         <div className="border-t border-brand-border py-1">
-                          {(user.role === "admin" || user.role === "moderator") && (
-                            <Link
-                              href="/admin"
-                              onClick={() => setShowProfileDropdown(false)}
-                              className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
-                            >
-                              <ShieldIcon className="w-3.5 h-3.5 text-brand-muted" />
-                              Admin Panel
-                            </Link>
-                          )}
                           <Link
-                            href="/upload"
+                            href="/admin"
                             onClick={() => setShowProfileDropdown(false)}
                             className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
                           >
-                            <UploadIcon className="w-3.5 h-3.5 text-brand-muted" />
-                            Upload Portal
+                            <ShieldIcon className="w-3.5 h-3.5 text-brand-muted" />
+                            Admin Panel
                           </Link>
                         </div>
                       )}
@@ -447,13 +447,25 @@ export default function Navbar() {
               >
                 Pricing
               </Link>
-              <Link
-                href="/partner"
-                onClick={toggleMenu}
-                className="flex items-center gap-1.5 text-[rgba(0,57,60,0.85)] text-base font-extrabold hover:text-brand transition-colors"
-              >
-                <StarIcon className="w-4.5 h-4.5" /> Become a Partner
-              </Link>
+              {user ? (
+                <Link
+                  href="/uploader"
+                  onClick={toggleMenu}
+                  className="flex items-center gap-1.5 text-[rgba(0,57,60,0.85)] text-base font-extrabold hover:text-brand transition-colors"
+                >
+                  <UploadIcon className="w-4 h-4" /> Upload Visual
+                </Link>
+              ) : (
+                <button
+                  onClick={() => {
+                    toggleMenu();
+                    useAuthModal.getState().open("signup");
+                  }}
+                  className="flex items-center gap-1.5 text-[rgba(0,57,60,0.85)] text-base font-extrabold hover:text-brand transition-colors text-left"
+                >
+                  <UploadIcon className="w-4 h-4" /> Upload Visual
+                </button>
+              )}
             </nav>
 
 

@@ -1,9 +1,17 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { Crown } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const pathname = usePathname();
+
+  if (pathname.startsWith("/uploader")) {
+    return null;
+  }
 
   return (
     <footer className="bg-brand text-white py-12 px-4 sm:px-6 lg:px-8 mt-auto">

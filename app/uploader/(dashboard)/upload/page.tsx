@@ -56,67 +56,99 @@ interface UploadMetadata {
   customTags: string[];
 }
 
-async function handleUpload(file: File, metadata: UploadMetadata, isAdmin: boolean) {
+async function handleUpload(files: File[], metadata: UploadMetadata, isAdmin: boolean) {
   // 1. Get current Supabase session
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Not authenticated");
 
-  // 1.5 Cloudinary Upload (Thumbnail)
+  const publicUrls: string[] = [];
   let thumbnailUrl = "";
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-  
-  if (cloudName && uploadPreset) {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", uploadPreset);
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: "POST",
-        body: formData
-      });
-      const data = await res.json();
-      if (data.secure_url) {
-        thumbnailUrl = data.secure_url;
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+
+    // 1.5 Cloudinary Upload (Thumbnail) - Only for the first file
+    if (i === 0) {
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+      
+      if (cloudName && uploadPreset) {
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("upload_preset", uploadPreset);
+          const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+            method: "POST",
+            body: formData
+          });
+          const data = await res.json();
+          if (data.secure_url) {
+            thumbnailUrl = data.secure_url;
+          }
+        } catch (e) {
+          console.error("Cloudinary upload failed", e);
+        }
       }
-    } catch (e) {
-      console.error("Cloudinary upload failed", e);
+    }
+
+    // 2. Upload file to Supabase Storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+    const filePath = `visuals/${fileName}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from("images")
+      .upload(filePath, file, { cacheControl: "3600", upsert: false });
+    
+    if (uploadError) throw uploadError;
+
+    // 3. Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from("images")
+      .getPublicUrl(filePath);
+
+    publicUrls.push(publicUrl);
+  }
+
+  if (!thumbnailUrl) thumbnailUrl = publicUrls[0];
+
+  // 4. Determine status based on trust rules
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single();
+  const isAdminOrMod = profile?.role === "admin" || profile?.role === "moderator";
+  let finalStatus = "pending_review";
+  let isPublished = false;
+
+  if (isAdminOrMod) {
+    finalStatus = "approved";
+    isPublished = true;
+  } else {
+    const { count } = await supabase.from("images")
+      .select("*", { count: "exact", head: true })
+      .eq("uploaded_by", session.user.id)
+      .eq("status", "approved");
+      
+    if (count !== null && count >= 3) {
+      finalStatus = "approved";
+      isPublished = true;
     }
   }
 
-  // 2. Upload file to Supabase Storage
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-  const filePath = `visuals/${fileName}`;
-  
-  const { error: uploadError } = await supabase.storage
-    .from("images")
-    .upload(filePath, file, { cacheControl: "3600", upsert: false });
-  
-  if (uploadError) throw uploadError;
-
-  // 3. Get public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from("images")
-    .getPublicUrl(filePath);
-
-  if (!thumbnailUrl) thumbnailUrl = publicUrl;
-
-  // 4. Insert image record into database
+  // 5. Insert image record into database
   const { data: imageRecord, error: dbError } = await supabase
     .from("images")
     .insert({
       title: metadata.title,
       description: metadata.description,
       alt_text: metadata.altText,
-      file_url: publicUrl,
+      file_url: publicUrls[0],
+      additional_urls: publicUrls.slice(1),
       thumbnail_url: thumbnailUrl,
       is_premium: metadata.isPremium,
-      is_published: isAdmin,            // Only admin publishes immediately
-      status: isAdmin ? "approved" : "pending_review",  // Team goes to queue
+      is_published: isPublished,
+      status: finalStatus,
       uploaded_by: session.user.id,
-      approved_by: isAdmin ? session.user.id : null,
-      published_at: isAdmin ? new Date().toISOString() : null,
+      approved_by: isAdminOrMod ? session.user.id : null,
+      published_at: isPublished ? new Date().toISOString() : null,
     })
     .select()
     .single();
@@ -192,9 +224,9 @@ export default function ContributorUploadPortal() {
   };
 
   // File states
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
   // Upload states
@@ -373,23 +405,43 @@ export default function ContributorUploadPortal() {
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, fileType: "main" | "thumb") => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      alert("Please upload only image files (SVG, PNG, JPG, JPEG).");
-      return;
-    }
-
     if (fileType === "main") {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setFilePreview(url);
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+
+      if (files.length + selectedFiles.length > 5) {
+        alert("You can only upload up to 5 images per post.");
+        return;
+      }
+
+      const validFiles = files.filter(f => f.type.startsWith("image/"));
+      if (validFiles.length !== files.length) {
+        alert("Please upload only image files (SVG, PNG, JPG, JPEG).");
+      }
+
+      const newFiles = [...selectedFiles, ...validFiles].slice(0, 5);
+      setSelectedFiles(newFiles);
+      setFilePreviews(newFiles.map(f => URL.createObjectURL(f)));
     } else {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload only image files (SVG, PNG, JPG, JPEG).");
+        return;
+      }
       setThumbnailFile(file);
-      const url = URL.createObjectURL(file);
-      setThumbnailPreview(url);
+      setThumbnailPreview(URL.createObjectURL(file));
     }
+  };
+
+  const removeSelectedFile = (index: number) => {
+    const newFiles = [...selectedFiles];
+    newFiles.splice(index, 1);
+    setSelectedFiles(newFiles);
+    
+    const newPreviews = [...filePreviews];
+    newPreviews.splice(index, 1);
+    setFilePreviews(newPreviews);
   };
 
   const addTag = () => {
@@ -409,8 +461,8 @@ export default function ContributorUploadPortal() {
   };
 
   const handleSubmit = async () => {
-    if (!title || !description || !selectedFile) {
-      setUploadError("Please fill in all required fields and select a file.");
+    if (!title || !description || selectedFiles.length === 0) {
+      setUploadError("Please fill in all required fields and select at least one file.");
       return;
     }
 
@@ -437,7 +489,7 @@ export default function ContributorUploadPortal() {
         };
 
         const isAdmin = userRole === "admin";
-        const imageRecord = await handleUpload(selectedFile, metadata, isAdmin);
+        const imageRecord = await handleUpload(selectedFiles, metadata, isAdmin);
         setUploadProgress(100);
         setUploadSuccess(imageRecord.id);
         
@@ -489,8 +541,8 @@ export default function ContributorUploadPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-surface text-brand py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="bg-brand-surface pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="max-w-4xl mx-auto px-6">
 
         {/* Header */}
         <div className="mb-8">
@@ -505,25 +557,7 @@ export default function ContributorUploadPortal() {
           </p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-2 mb-6">
-          {(["upload", "my-uploads"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveView(tab)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeView === tab
-                  ? "bg-brand text-white shadow-sm"
-                  : "bg-white border border-brand-border text-[rgba(0,57,60,0.7)] hover:bg-[#f3f3f3]"
-              }`}
-            >
-              {tab === "upload" ? "Upload New Visual" : `My Uploads (${myUploads.length})`}
-            </button>
-          ))}
-        </div>
-
         {/* ====== UPLOAD FORM ====== */}
-        {activeView === "upload" && (
           <div className="bg-white border border-brand-border rounded-3xl shadow-sm overflow-hidden">
 
             {/* Progress Steps */}
@@ -704,32 +738,46 @@ export default function ContributorUploadPortal() {
                 <div className="flex flex-col gap-6">
                   {/* Main File Upload */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Main Visual File * (SVG, PNG, JPG, PDF — max 20MB)</label>
+                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Main Visual File(s) * (Up to 5 images, max 20MB each)</label>
                     <div
                       onClick={() => fileInputRef.current?.click()}
                       className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
-                        selectedFile ? "border-brand bg-brand/5" : "border-brand-border hover:border-brand/50 hover:bg-brand/5"
+                        selectedFiles.length > 0 ? "border-brand bg-brand/5" : "border-brand-border hover:border-brand/50 hover:bg-brand/5"
                       }`}
                     >
-                      {filePreview && selectedFile?.type.startsWith("image/") ? (
-                        <img src={filePreview} alt="Preview" className="max-h-40 mx-auto rounded-xl object-contain" />
-                      ) : selectedFile ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <FileImage className="w-10 h-10 text-brand" />
-                          <p className="text-xs font-bold text-brand">{selectedFile.name}</p>
-                          <p className="text-[10px] text-[rgba(0,57,60,0.5)]">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                      {selectedFiles.length > 0 ? (
+                        <div className="flex flex-wrap items-center justify-center gap-4">
+                          {selectedFiles.map((f, i) => (
+                            <div key={i} className="relative group">
+                              <img src={filePreviews[i]} alt="Preview" className="h-24 w-24 md:h-32 md:w-32 rounded-xl object-cover border border-brand-border bg-white shadow-sm" />
+                              <button 
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); removeSelectedFile(i); }}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-md hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
+                                title="Remove file"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ))}
+                          {selectedFiles.length < 5 && (
+                            <div className="h-24 w-24 md:h-32 md:w-32 rounded-xl border-2 border-dashed border-brand-border flex items-center justify-center bg-white hover:bg-gray-50 transition-colors">
+                              <Plus className="w-8 h-8 text-[rgba(0,57,60,0.3)]" />
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-3">
                           <Upload className="w-10 h-10 text-[rgba(0,57,60,0.3)]" />
-                          <p className="text-sm font-bold text-[rgba(0,57,60,0.7)]">Click to select or drag and drop</p>
-                          <p className="text-[10px] text-brand-faint">SVG · PNG · JPG · JPEG — Maximum 20MB</p>
+                          <p className="text-sm font-bold text-[rgba(0,57,60,0.7)]">Click to select up to 5 images</p>
+                          <p className="text-[10px] text-brand-faint">SVG · PNG · JPG · JPEG</p>
                         </div>
                       )}
                     </div>
                     <input
                       ref={fileInputRef}
                       type="file"
+                      multiple
                       accept=".svg,.png,.jpg,.jpeg,image/*"
                       className="hidden"
                       onChange={(e) => handleFileSelect(e, "main")}
@@ -762,8 +810,8 @@ export default function ContributorUploadPortal() {
                       ← Back
                     </button>
                     <button
-                      onClick={() => selectedFile ? setStep(3) : null}
-                      disabled={!selectedFile}
+                      onClick={() => selectedFiles.length > 0 ? setStep(3) : null}
+                      disabled={selectedFiles.length === 0}
                       className="flex-1 bg-brand hover:bg-brand disabled:opacity-40 text-white font-black text-xs py-3 rounded-xl transition-all shadow cursor-pointer"
                     >
                       Review Submission →
@@ -785,7 +833,7 @@ export default function ContributorUploadPortal() {
                       <div><span className="text-[rgba(0,57,60,0.5)] text-[10px] uppercase font-bold">Syllabus</span><p className="font-black mt-0.5">{syllabus}</p></div>
                       <div><span className="text-[rgba(0,57,60,0.5)] text-[10px] uppercase font-bold">Medium</span><p className="font-black mt-0.5">{medium}</p></div>
                       <div><span className="text-[rgba(0,57,60,0.5)] text-[10px] uppercase font-bold">Access Tier</span><p className={`font-black mt-0.5 ${isPremium ? "text-amber-600" : "text-emerald-600"}`}>{isPremium ? "Premium" : "Free"}</p></div>
-                      <div><span className="text-[rgba(0,57,60,0.5)] text-[10px] uppercase font-bold">File</span><p className="font-black mt-0.5 truncate">{selectedFile?.name}</p></div>
+                      <div><span className="text-[rgba(0,57,60,0.5)] text-[10px] uppercase font-bold">File</span><p className="font-black mt-0.5 truncate">{selectedFiles[0]?.name} {selectedFiles.length > 1 ? `(+${selectedFiles.length - 1} more)` : ''}</p></div>
                     </div>
                     {tags.length > 0 && (
                       <div><span className="text-[rgba(0,57,60,0.5)] text-[10px] uppercase font-bold">Tags</span>
@@ -849,78 +897,7 @@ export default function ContributorUploadPortal() {
               )}
             </div>
           </div>
-        )}
 
-        {/* ====== MY UPLOADS LIST ====== */}
-        {activeView === "my-uploads" && (
-          <div className="flex flex-col gap-4">
-            {loadingUploads ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-6 w-6 border-2 border-brand border-t-transparent" />
-              </div>
-            ) : myUploads.length === 0 ? (
-              <div className="text-center py-16 bg-white border border-brand-border rounded-3xl">
-                <FileImage className="w-12 h-12 text-[rgba(0,57,60,0.2)] mx-auto mb-4" />
-                <p className="text-sm font-black text-[rgba(0,57,60,0.5)]">No uploads yet</p>
-                <button onClick={() => setActiveView("upload")} className="mt-4 px-4 py-2 bg-brand text-white text-xs font-bold rounded-xl hover:bg-brand transition-all cursor-pointer">
-                  Upload Your First Visual
-                </button>
-              </div>
-            ) : (
-              myUploads.map((upload) => {
-                const meta = statusMeta[upload.status] || statusMeta.draft;
-                return (
-                  <div key={upload.id} className="bg-white border border-brand-border rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm">
-                    {/* Thumbnail */}
-                    <div className="w-16 h-16 rounded-xl bg-[#f3f3f3] border border-brand-border flex-shrink-0 overflow-hidden">
-                      {upload.thumbnail_url ? (
-                        <img src={upload.thumbnail_url} alt={upload.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center"><FileImage className="w-6 h-6 text-[rgba(0,57,60,0.3)]" /></div>
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <p className="font-black text-sm text-brand truncate">{upload.title}</p>
-                      <p className="text-[10px] text-[rgba(0,57,60,0.5)] font-medium mt-0.5">
-                        Uploaded {new Date(upload.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
-                      </p>
-
-                      {upload.status === "rejected" && upload.rejection_reason && (
-                        <div className="mt-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-[10px] text-red-700 font-medium">
-                          <span className="font-black">Rejection Reason: </span>{upload.rejection_reason}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-4 shrink-0">
-                      <div className="flex items-center gap-3 text-[10px] font-bold text-brand-muted">
-                        <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{upload.view_count}</span>
-                        <span className="flex items-center gap-1"><Download className="w-3 h-3" />{upload.download_count}</span>
-                      </div>
-                      <span className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${meta.color}`}>
-                        {meta.icon}{meta.label}
-                      </span>
-                      <div className="flex gap-1 ml-2">
-                        {upload.status === "approved" && (
-                          <a href={`/image/${upload.id}`} target="_blank" rel="noopener noreferrer" className="p-2 text-brand hover:bg-[#f3f3f3] rounded-full transition-colors inline-flex items-center justify-center" title="View on site">
-                            <Eye className="w-4 h-4" />
-                          </a>
-                        )}
-                        <button onClick={() => openEditModal(upload)} className="p-2 text-brand hover:bg-[#f3f3f3] rounded-full transition-colors" title="Edit">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDeleteUpload(upload.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Delete">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
 
       </div>
 
