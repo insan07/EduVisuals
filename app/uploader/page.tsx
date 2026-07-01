@@ -14,7 +14,7 @@ export default function UploaderRouterPage() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        router.push("/");
+        router.push("/?auth=required&next=/uploader");
         return;
       }
 

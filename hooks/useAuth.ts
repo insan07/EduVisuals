@@ -100,7 +100,7 @@ export function useRequireAuth(allowedRoles?: string[]) {
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      router.push("/?auth=required");
+      router.push(`/?auth=required&next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
     }
     if (allowedRoles && !allowedRoles.includes(user.role)) {

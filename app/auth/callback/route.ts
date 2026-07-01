@@ -4,7 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const cookieNext = request.cookies.get("returnUrl")?.value;
+  const rawNext = searchParams.get("next");
+  const next = (rawNext && rawNext !== "") ? rawNext : (cookieNext ? decodeURIComponent(cookieNext) : "/dashboard");
 
   if (code) {
     const supabase = createClient(
@@ -33,8 +35,15 @@ export async function GET(request: NextRequest) {
       }
       const res = NextResponse.redirect(`${origin}${next}#access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}`);
       res.cookies.set("sb-access-token", data.session.access_token, { path: "/", maxAge: 604800, sameSite: "lax" });
+      res.cookies.delete("returnUrl");
       return res;
     }
   }
-  return NextResponse.redirect(`${origin}/?auth=error`);
+  
+  // If no code, it's either an error or implicit flow (hash fragment).
+  // The browser will append the hash fragment to this redirect automatically.
+  // So we just redirect them to `next` instead of `/?auth=error`
+  const res = NextResponse.redirect(`${origin}${next}`);
+  res.cookies.delete("returnUrl");
+  return res;
 }

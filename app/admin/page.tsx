@@ -221,7 +221,7 @@ export default function AdminDashboard() {
     const checkAuth = async () => {
       if (isSupabaseConfigured()) {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) { router.push('/'); return; }
+        if (!session) { router.push('/?auth=required&next=/admin'); return; }
         const { data: profile } = await supabase
           .from('profiles')
           .select('role, full_name')

@@ -21,28 +21,10 @@ import {
   Upload,
   Layers,
 } from "lucide-react";
+import VisualCard, { Visual } from "@/components/VisualCard";
 
 /* ─────────────────────────────── Types ─────────────────────────────── */
 
-interface Visual {
-  id: string;
-  title: string;
-  description: string | null;
-  thumbnail_url?: string | null;
-  thumbnailUrl?: string | null;
-  file_url: string;
-  is_premium?: boolean;
-  isPremium?: boolean;
-  download_count?: number;
-  downloadCount?: number;
-  view_count?: number;
-  subject: string;
-  grade: string;
-  type: string;
-  syllabus: string;
-  medium: string;
-  additional_urls?: string[];
-}
 
 /* ─────────────────────────── Static Filter Options ─────────────────────────── */
 
@@ -107,19 +89,58 @@ function SearchResultsContent() {
   
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  /* ── Fetch user role from session ── */
+  const [suggestedVisuals, setSuggestedVisuals] = useState<Visual[]>([]);
+
+  /* ── Fetch user session data ── */
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
+        const userId = data.user.id;
+        
+        // Fetch role
         supabase
           .from("profiles")
           .select("role")
-          .eq("id", data.user.id)
+          .eq("id", userId)
           .single()
           .then(({ data: profile }) => {
             if (profile?.role) setUserRole(profile.role);
           });
+
+        // Fetch followed creator visuals for suggestions
+        const fetchFollowingVisuals = async () => {
+          const { data: follows } = await supabase
+            .from("follows")
+            .select("creator_id")
+            .eq("follower_id", userId);
+            
+          if (follows && follows.length > 0) {
+            const creatorIds = follows.map(f => f.creator_id);
+            const { data: recentVisuals } = await supabase
+              .from("images")
+              .select("*, image_tags(*)")
+              .in("uploaded_by", creatorIds)
+              .eq("status", "approved")
+              .eq("is_published", true)
+              .order("created_at", { ascending: false })
+              .limit(10);
+              
+            if (recentVisuals && recentVisuals.length > 0) {
+              const mapped = recentVisuals.map((img: any) => {
+                const tags = img.image_tags || [];
+                return {
+                  ...img,
+                  subject: tags.find((t: any) => t.tag_type === "subject")?.tag || "General",
+                  grade: tags.find((t: any) => t.tag_type === "grade")?.tag || "General",
+                  type: tags.find((t: any) => t.tag_type === "type")?.tag || "Diagram",
+                };
+              });
+              setSuggestedVisuals(mapped);
+            }
+          }
+        };
+        fetchFollowingVisuals();
       }
     });
   }, []);
@@ -220,10 +241,10 @@ function SearchResultsContent() {
     }
     
     try {
-      await downloadWithWatermark(visual.file_url, visual.title || "eduvisuals-download");
+      await downloadWithWatermark(visual.file_url!, visual.title || "eduvisuals-download");
     } catch (e) {
       console.error("Watermark generation failed, falling back to direct download", e);
-      const downloadUrl = visual.file_url.includes('?') 
+      const downloadUrl = visual.file_url!.includes('?') 
         ? `${visual.file_url}&download=` 
         : `${visual.file_url}?download=`;
       
@@ -435,6 +456,30 @@ function SearchResultsContent() {
             {isLoading ? "Loading…" : `${visuals.length} visual${visuals.length !== 1 ? "s" : ""} found`}
           </span>
         </div>
+
+        {/* ── Suggested Visuals (From Creators You Follow) ── */}
+        {!isLoading && suggestedVisuals.length > 0 && !q && activeFilterCount === 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white">
+                <Heart size={16} fill="currentColor" />
+              </div>
+              <h2 className="text-xl font-black text-brand tracking-tight">From Creators You Follow</h2>
+            </div>
+            <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide">
+              {suggestedVisuals.map((visual) => (
+                <div key={`suggested-${visual.id}`} className="flex-shrink-0 w-[260px] sm:w-[280px]">
+                  <VisualCard 
+                    visual={visual}
+                    isSaved={savedIds.has(visual.id)}
+                    onSave={() => toggleSave(visual.id, visual.title)}
+                    onDownload={() => handleDownload(visual)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Active Filter Chips ── */}
         {activeFilterCount > 0 && (
@@ -695,109 +740,7 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
   );
 }
 
-/* ── VisualCard ── */
-function VisualCard({
-  visual, isSaved, onSave, onDownload,
-}: {
-  visual: Visual;
-  isSaved: boolean;
-  onSave: () => void;
-  onDownload: () => void;
-}) {
-  const [imgSrc, setImgSrc] = useState(visual.thumbnailUrl || visual.thumbnail_url || visual.file_url);
-  const isPremiumVisual = visual.isPremium ?? visual.is_premium ?? false;
 
-  return (
-    <Link
-      href={`/image/${visual.id}`}
-      className="group block relative w-full rounded-2xl overflow-hidden cursor-pointer"
-      style={{
-        background: "linear-gradient(135deg, #e8f5f6, #d0ecee)",
-      }}
-    >
-      {/* ── Image ── */}
-      {imgSrc ? (
-        <img
-          src={imgSrc}
-          alt={visual.title}
-          onContextMenu={(e) => e.preventDefault()}
-          onDragStart={(e) => e.preventDefault()}
-          draggable={false}
-          onError={() => {
-            const fallbackSrc = visual.thumbnailUrl || visual.thumbnail_url;
-            if (imgSrc === fallbackSrc && visual.file_url && visual.file_url !== fallbackSrc) {
-              setImgSrc(visual.file_url);
-            } else {
-              setImgSrc("");
-            }
-          }}
-          className="w-full h-auto max-h-[300px] sm:max-h-[400px] md:max-h-[500px] block object-cover object-top"
-        />
-      ) : (
-        <div className="w-full aspect-video flex items-center justify-center">
-          <FileImage size={40} style={{ color: "rgba(7,50,56,0.25)" }} />
-        </div>
-      )}
-
-      {/* ── Premium badge (Always visible) ── */}
-      {isPremiumVisual && (
-        <div className="absolute top-3 left-3 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-md px-2 py-1 text-xs font-bold flex items-center gap-1 z-10 shadow-sm">
-          <Crown size={12} /> Premium
-        </div>
-      )}
-
-      {/* ── Multiple Images badge (Always visible) ── */}
-      {visual.additional_urls && visual.additional_urls.length > 0 && (
-        <div className="absolute top-3 right-3 bg-brand/80 backdrop-blur-sm text-white rounded-md p-1.5 z-10 shadow-sm">
-          <Layers size={14} />
-        </div>
-      )}
-
-      {/* ── Overlay (Hover only, hidden on mobile) ── */}
-      <div className="card-overlay absolute inset-0 z-0 pointer-events-none opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 hidden md:flex flex-col justify-between bg-black/40">
-
-        <div className="relative z-10 flex justify-end p-3 pointer-events-auto">
-          {/* Top right actions */}
-          <div className="flex gap-2">
-            <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSave(); }}
-              className="bg-white/90 hover:bg-white text-gray-700 p-2 rounded-lg backdrop-blur-sm transition-colors shadow-sm"
-            >
-              <Heart size={16} fill={isSaved ? "#ef4444" : "none"} stroke={isSaved ? "#ef4444" : "currentColor"} />
-            </button>
-            <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDownload(); }}
-              className="bg-white/90 hover:bg-white text-gray-700 p-2 rounded-lg backdrop-blur-sm transition-colors shadow-sm flex items-center justify-center"
-            >
-              <Download size={16} />
-            </button>
-          </div>
-        </div>
-
-        <div className="relative z-10 p-4 pointer-events-auto mt-auto">
-          {/* Bottom left content */}
-          <h3 className="text-white font-medium text-sm sm:text-base line-clamp-2 mb-2 leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-            {visual.title}
-          </h3>
-          {/* Tags row */}
-          <div className="flex flex-wrap gap-2">
-            {visual.subject && (
-              <span className="bg-black/30 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded text-[10px] sm:text-xs font-medium">
-                {visual.subject}
-              </span>
-            )}
-
-            {visual.type && (
-              <span className="bg-black/30 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded text-[10px] sm:text-xs font-medium">
-                {visual.type}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
 
 /* ── SkeletonCard ── */
 function SkeletonCard() {

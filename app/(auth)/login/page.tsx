@@ -30,7 +30,10 @@ export default function LoginPage() {
   }, [router, returnUrl]);
 
   const handleGoogleSignIn = async () => {
-    const redirectTo = `${window.location.origin}${returnUrl}`;
+    if (typeof document !== "undefined") {
+      document.cookie = `returnUrl=${encodeURIComponent(returnUrl)}; path=/; max-age=3600`;
+    }
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(returnUrl)}`;
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo },

@@ -31,6 +31,8 @@ import {
   X,
   Edit2,
   Trash2,
+  Bookmark,
+  UserCheck,
 } from "lucide-react";
 import { GRADES, SUBJECTS, TYPES, SYLLABUSES, MEDIUMS } from "@/lib/constants";
 import EditVisualModal from "@/components/EditVisualModal";
@@ -78,9 +80,13 @@ export default function ImageDetailPage({ params }: PageProps) {
   const [toastMessage, setToastMessage] = useState("");
   const [showUpsell, setShowUpsell] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMoreDropdownOpen, setIsMoreDropdownOpen] = useState(false);
   
   const [relatedVisuals, setRelatedVisuals] = useState<any[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
 
   // Fetch real data
   useEffect(() => {
@@ -162,25 +168,52 @@ export default function ImageDetailPage({ params }: PageProps) {
       // Fetch creator
       let creatorProfile = null;
       if (mappedImage.uploaded_by) {
+        // Attempt to fetch from uploader_profiles
+        // Note: RLS might block this if public select isn't enabled on uploader_profiles.
+        // We'll add a public select policy via SQL later, but for now we fallback gracefully.
         const { data: uploader } = await supabase
           .from("uploader_profiles")
           .select("display_name, highest_qualification, short_bio, portfolio_url")
           .eq("id", mappedImage.uploaded_by)
-          .single();
+          .maybeSingle();
         
         if (uploader) {
           creatorProfile = { ...uploader, id: mappedImage.uploaded_by };
         } else {
-          // fallback to profiles
+          // fallback to profiles if uploader_profiles fails (e.g. RLS or not onboarded)
           const { data: prof } = await supabase
             .from("profiles")
             .select("full_name")
             .eq("id", mappedImage.uploaded_by)
-            .single();
-          creatorProfile = { display_name: prof?.full_name || "EduVisuals Creator", id: mappedImage.uploaded_by };
+            .maybeSingle();
+            
+          creatorProfile = { 
+            display_name: prof?.full_name || "EduVisuals Creator", 
+            id: mappedImage.uploaded_by 
+          };
         }
+      } else {
+        // Fallback for older images where uploaded_by is null
+        creatorProfile = {
+          display_name: "EduVisuals Official",
+          highest_qualification: "Platform Admin",
+          short_bio: "The official account of EduVisuals.",
+          id: "official"
+        };
       }
       setCreator(creatorProfile);
+
+      // Check follow status
+      if (userId && creatorProfile && creatorProfile.id !== "official") {
+        const { data: followData } = await supabase
+          .from("follows")
+          .select("id")
+          .eq("follower_id", userId)
+          .eq("following_id", creatorProfile.id)
+          .maybeSingle();
+        if (followData) setIsFollowing(true);
+      }
+
       setIsLoading(false);
 
       // 3. Track in localStorage for "Recently Seen" feature
@@ -220,6 +253,40 @@ export default function ImageDetailPage({ params }: PageProps) {
     }
     loadData();
   }, [currentId]);
+
+  const handleFollow = async () => {
+    if (userState === "guest") {
+      useAuthModal.getState().open("signin");
+      return;
+    }
+    if (!currentUser || !creator || creator.id === "official") return;
+
+    setIsFollowLoading(true);
+    try {
+      if (isFollowing) {
+        // Unfollow
+        await supabase
+          .from("follows")
+          .delete()
+          .eq("follower_id", currentUser.id)
+          .eq("following_id", creator.id);
+        setIsFollowing(false);
+      } else {
+        // Follow
+        await supabase
+          .from("follows")
+          .insert({
+            follower_id: currentUser.id,
+            following_id: creator.id
+          });
+        setIsFollowing(true);
+      }
+    } catch (err) {
+      console.error("Error toggling follow", err);
+    } finally {
+      setIsFollowLoading(false);
+    }
+  };
 
   const handleDeleteVisual = async () => {
     if (!confirm("Are you sure you want to delete this visual? This action cannot be undone.")) return;
@@ -495,20 +562,101 @@ export default function ImageDetailPage({ params }: PageProps) {
     </Link>
   );
 
+  const renderActionButtons = (className: string) => (
+    <div className={`flex items-center gap-2 shrink-0 ${className}`}>
+      {/* Save Button */}
+      <button 
+        onClick={() => collectionModal.open(visual.id, visual.title)}
+        className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-500 hover:text-brand transition-colors shadow-sm"
+        title="Save Visual"
+      >
+        <Bookmark className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+      </button>
+
+      {/* Share Button (opens dropdown) */}
+      <div className="relative">
+        <button 
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
+          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-500 hover:text-brand transition-colors shadow-sm"
+          title="Share"
+        >
+          <Share2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+        </button>
+        {isDropdownOpen && (
+          <div className="absolute right-0 sm:left-0 sm:right-auto top-full mt-2 w-48 bg-white border border-brand-border rounded-xl shadow-lg z-30 py-2 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+            <button 
+              onClick={() => { handleCopyLink(); setIsDropdownOpen(false); }}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
+            >
+              <Copy className="w-3.5 h-3.5" /> Copy Link
+            </button>
+            <a 
+              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                `Check out this educational visual aid: ${visual.title} - https://eduvisuals.com/image/${visual.id}`
+              )}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
+            >
+              <MessageCircle className="w-3.5 h-3.5" /> Share on WhatsApp
+            </a>
+            <a 
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                `https://eduvisuals.com/image/${visual.id}`
+              )}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
+            >
+              <Share2 className="w-3.5 h-3.5" /> Share on Facebook
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* More Actions Dropdown */}
+      <div className="relative">
+        <button 
+          onClick={() => setIsMoreDropdownOpen(!isMoreDropdownOpen)}
+          onBlur={() => setTimeout(() => setIsMoreDropdownOpen(false), 200)}
+          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-500 hover:text-brand transition-colors shadow-sm"
+          title="More Actions"
+        >
+          <MoreHorizontal className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+        </button>
+        {isMoreDropdownOpen && (
+          <div className="absolute right-0 sm:left-0 sm:right-auto top-full mt-2 w-48 bg-white border border-brand-border rounded-xl shadow-lg z-30 py-2 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+            {currentUser && (currentUser.id === visual.uploaded_by || currentUser.role === 'admin' || currentUser.role === 'moderator') ? (
+              <>
+                <button 
+                  onClick={() => { openEditModal(); setIsMoreDropdownOpen(false); }}
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
+                >
+                  <Edit2 className="w-3.5 h-3.5" /> Edit Visual
+                </button>
+                <button 
+                  onClick={() => { handleDeleteVisual(); setIsMoreDropdownOpen(false); }}
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors w-full text-left"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete Visual
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={() => { setIsReportModalOpen(true); setIsMoreDropdownOpen(false); }}
+                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors w-full text-left"
+              >
+                <Flag className="w-3.5 h-3.5" /> Report Issue
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col min-h-screen bg-brand-surface text-brand pb-20 md:pb-12 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 md:pt-28 pb-6 flex-1 flex flex-col w-full min-w-0">
-        
-        {/* Breadcrumbs */}
-        <nav className="flex flex-wrap items-center gap-1.5 text-xs text-brand-faint mb-6 w-full">
-          <Link href="/" className="hover:text-brand font-medium">Home</Link>
-          <ChevronRight className="w-3.5 h-3.5 text-brand-faint" />
-          <Link href={`/visuals?subject=${visual.subject}`} className="hover:text-brand font-medium">{visual.subject}</Link>
-          <ChevronRight className="w-3.5 h-3.5 text-brand-faint" />
-          <Link href={`/visuals?type=${visual.type}`} className="hover:text-brand font-medium">{visual.type}s</Link>
-          <ChevronRight className="w-3.5 h-3.5 text-brand-faint" />
-          <span className="text-brand font-bold line-clamp-1">{visual.title}</span>
-        </nav>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 md:pt-24 pb-6 flex-1 flex flex-col w-full min-w-0">
 
         {/* Dynamic Two-Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 mb-8 md:mb-10 items-start">
@@ -612,98 +760,120 @@ export default function ImageDetailPage({ params }: PageProps) {
               )}
             </div>
 
-            {/* Sub-preview utilities */}
-            <div className="flex justify-end items-center px-2">
-              <button 
-                onClick={() => collectionModal.open(visual.id, visual.title)}
-                className={`flex items-center gap-1 text-xs font-bold transition-all text-brand hover:text-red-500`}
-              >
-                <Heart className="w-4 h-4" />
-                Save Visual
-              </button>
+            {/* Stats and Tags Row */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mt-1">
+              
+              {/* Tags (Hidden on mobile) */}
+              <div className="hidden sm:flex flex-wrap gap-2 md:gap-2.5">
+                {tags.map((tag, idx) => (
+                  <Link
+                    key={idx}
+                    href={`/visuals?q=${encodeURIComponent(tag as string)}`}
+                    className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-[#f2f2f2] hover:bg-[#e5e5e5] text-[#555] hover:text-[#333] transition-colors"
+                  >
+                    {tag}
+                  </Link>
+                ))}
+              </div>
+
+              {/* Mobile Actions and Stats */}
+              <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
+                
+                {/* Stats */}
+                <div className="flex items-center gap-4 shrink-0 py-1">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-brand-faint" title="Downloads">
+                    <Download className="w-4 h-4" />
+                    <span className="text-brand font-black text-sm">{visual.download_count}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-brand-faint" title="Views">
+                    <Info className="w-4 h-4" />
+                    <span className="text-brand font-black text-sm">{visual.view_count}</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons (Visible only on mobile) */}
+                {renderActionButtons("flex sm:hidden")}
+              </div>
             </div>
+
           </div>
 
           {/* ================= RIGHT COLUMN: INFO + PANEL (40%) ================= */}
           <div className="lg:col-span-4 flex flex-col gap-6 min-w-0">
             
-            {/* Title & Metadata */}
             <div>
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <h1 className="text-2xl md:text-3xl font-black text-brand leading-tight">
-                  {visual.title}
-                </h1>
-                
-                {/* 3-dots Dropdown Menu */}
-                <div className="relative">
+              {/* Actions & Download Row */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              
+              {/* Action Buttons Row (Hidden on mobile) */}
+              {renderActionButtons("hidden sm:flex")}
+
+              {/* Download Button (Right) */}
+              <div className="w-full sm:w-auto sm:ml-auto">
+                {visual.is_premium && userState !== "premium" ? (
                   <button 
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
-                    className="p-2 rounded-full hover:bg-brand-surface text-brand-faint hover:text-brand transition-colors"
+                    onClick={() => setShowUpsell(true)}
+                    className="w-full bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold text-sm py-2.5 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5"
                   >
-                    <MoreHorizontal className="w-5 h-5" />
+                    <Crown className="w-4 h-4" />
+                    Download Premium
                   </button>
-                  
-                  {isDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-brand-border rounded-xl shadow-lg z-30 py-2 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-                      <button 
-                        onClick={() => { handleCopyLink(); setIsDropdownOpen(false); }}
-                        className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
-                      >
-                        <Copy className="w-3.5 h-3.5" /> Copy Link
-                      </button>
-                      <a 
-                        href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                          `Check out this educational visual aid: ${visual.title} - https://eduvisuals.com/image/${visual.id}`
-                        )}`}
-                        target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" /> Share on WhatsApp
-                      </a>
-                      <a 
-                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                          `https://eduvisuals.com/image/${visual.id}`
-                        )}`}
-                        target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
-                      >
-                        <Share2 className="w-3.5 h-3.5" /> Share on Facebook
-                      </a>
-                      <div className="h-px bg-brand-border my-1 w-full" />
-                      
-                      {currentUser && (currentUser.id === visual.uploaded_by || currentUser.role === 'admin' || currentUser.role === 'moderator') && (
-                        <>
-                          <button 
-                            onClick={() => { openEditModal(); setIsDropdownOpen(false); }}
-                            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" /> Edit Visual
-                          </button>
-                          <button 
-                            onClick={() => { handleDeleteVisual(); setIsDropdownOpen(false); }}
-                            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors w-full text-left"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" /> Delete Visual
-                          </button>
-                        </>
-                      )}
-                      
-                      <button 
-                        onClick={() => { 
-                          setIsReportModalOpen(true);
-                          setIsDropdownOpen(false); 
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors w-full text-left"
-                      >
-                        <Flag className="w-3.5 h-3.5" /> Report Issue
-                      </button>
-                    </div>
+                ) : (
+                  <button 
+                    onClick={() => handleDownloadClick()}
+                    className="w-full bg-brand hover:bg-brand/90 text-white font-extrabold text-sm py-2.5 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Visual
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Main Title Area (Moved below buttons) */}
+            <div className="w-full mb-6 mt-2">
+              <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-brand leading-tight">
+                {visual.title}
+              </h1>
+            </div>
+
+            {/* UPSELL STATE */}
+            {showUpsell && (
+              <div className="border border-amber-200 bg-amber-50 rounded-2xl p-6 flex flex-col gap-4 shadow-sm animate-in fade-in zoom-in duration-200 mb-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-amber-800 font-black text-sm flex items-center gap-1.5">
+                    <Crown className="w-4 h-4 text-amber-600" />
+                    Premium Visual
+                  </span>
+                  <button onClick={() => setShowUpsell(false)} className="text-amber-500 hover:text-amber-700">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                  This visual is reserved for Premium members. Upgrade to get instant access to high-resolution, watermark-free downloads.
+                </p>
+
+                <div className="flex flex-col gap-2 mt-2">
+                  <Link 
+                    href="/pricing"
+                    className="w-full bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-sm text-center"
+                  >
+                    View Premium Plans
+                  </Link>
+                  {userState === "guest" && (
+                    <button 
+                      onClick={() => { setShowUpsell(false); useAuthModal.getState().open("signin"); }}
+                      className="w-full bg-white border border-amber-200 text-amber-700 hover:bg-amber-100 font-extrabold text-xs py-3 rounded-xl transition-all"
+                    >
+                      Sign In
+                    </button>
                   )}
                 </div>
               </div>
+            )}
               {/* Meta row */}
-              <div className="flex items-center gap-2 text-xs font-semibold text-brand-faint mb-4 uppercase tracking-wide">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-semibold text-brand-faint mb-4 uppercase tracking-wide">
                 <span>{visual.subject}</span>
                 <span>•</span>
                 <span>{visual.grade}</span>
@@ -712,134 +882,82 @@ export default function ImageDetailPage({ params }: PageProps) {
               </div>
 
               {visual.description && (
-                <p className="text-sm text-brand-faint font-medium mb-6 break-words whitespace-normal leading-relaxed">
+                <p className="text-sm text-brand-faint font-medium mb-2 break-words whitespace-normal leading-relaxed">
                   {visual.description}
                 </p>
               )}
-
-              <hr className="border-brand-border mb-6" />
-
-              {/* DOWNLOAD PANEL (MINIMAL) */}
-              <div className="w-full">
-                
-                {/* UPSELL STATE */}
-                {showUpsell ? (
-                  <div className="border border-amber-200 bg-amber-50 rounded-2xl p-6 flex flex-col gap-4 shadow-sm animate-in fade-in zoom-in duration-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-amber-800 font-black text-sm flex items-center gap-1.5">
-                        <Crown className="w-4 h-4 text-amber-600" />
-                        Premium Visual
-                      </span>
-                      <button onClick={() => setShowUpsell(false)} className="text-amber-500 hover:text-amber-700">
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    <p className="text-xs text-amber-700 font-medium leading-relaxed">
-                      This visual is reserved for Premium members. Upgrade to get instant access to high-resolution, watermark-free downloads.
-                    </p>
-
-                    <div className="flex flex-col gap-2 mt-2">
-                      <Link 
-                        href="/pricing"
-                        className="w-full bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-sm text-center"
-                      >
-                        View Premium Plans
-                      </Link>
-                      {userState === "guest" && (
-                        <button 
-                          onClick={() => { setShowUpsell(false); useAuthModal.getState().open("signin"); }}
-                          className="w-full bg-white border border-amber-200 text-amber-700 hover:bg-amber-100 font-extrabold text-xs py-3 rounded-xl transition-all"
-                        >
-                          Sign In
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  /* BUTTON STATE */
-                  visual.is_premium && userState !== "premium" ? (
-                    <button 
-                      onClick={() => setShowUpsell(true)}
-                      className="w-full bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold text-sm py-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5"
-                    >
-                      <Crown className="w-5 h-5" />
-                      Download Premium
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => handleDownloadClick()}
-                      className="w-full bg-brand hover:bg-brand/90 text-white font-extrabold text-sm py-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5"
-                    >
-                      <Download className="w-5 h-5" />
-                      Download Visual
-                    </button>
-                  )
-                )}
-                
-                {/* Stats */}
-                <div className="flex items-center justify-center gap-6 mt-6">
-                  <div className="text-xs font-semibold text-brand-faint flex items-center gap-1.5">
-                    <Download className="w-3.5 h-3.5" />
-                    <span className="text-brand font-black">{visual.download_count}</span>
-                  </div>
-                  <div className="text-xs font-semibold text-brand-faint flex items-center gap-1.5">
-                    <Info className="w-3.5 h-3.5" />
-                    <span className="text-brand font-black">{visual.view_count}</span>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <hr className="border-brand-border" />
 
             {/* CREATOR CARD */}
             {creator && (
-              <div className="flex flex-col gap-3">
-                <h3 className="font-extrabold text-xs uppercase tracking-wider text-brand">
-                  Uploaded By
-                </h3>
-                <div className="flex items-center justify-between p-4 bg-white border border-brand-border rounded-2xl hover:border-brand/30 transition-colors shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg flex-shrink-0">
-                      {creator.display_name?.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-brand text-sm line-clamp-1">{creator.display_name}</h4>
-                      {creator.highest_qualification && (
-                        <p className="text-[10px] font-bold text-brand-muted line-clamp-1">{creator.highest_qualification}</p>
-                      )}
+              <div className="flex items-center justify-between mb-2 mt-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  {/* Profile Image */}
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xl flex-shrink-0 overflow-hidden shadow-sm">
+                    {creator.avatar_url ? (
+                      <img src={creator.avatar_url} alt={creator.display_name} className="w-full h-full object-cover" />
+                    ) : (
+                      creator.display_name?.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  
+                  {/* Name & Badge */}
+                  <div className="flex flex-col gap-0.5">
+                    <Link href={`/creator/${creator.id}`} className="hover:opacity-80 transition-opacity">
+                      <h4 className="font-extrabold text-brand text-lg sm:text-[20px] leading-tight mb-1">
+                        {creator.display_name}
+                      </h4>
+                    </Link>
+                    
+                    {/* Verified Badge */}
+                    <div className="inline-flex items-center rounded-md border border-[#52B774] overflow-hidden self-start">
+                      <div className="bg-[#52B774] pl-1.5 pr-1 py-0.5 flex items-center justify-center">
+                        <UserCheck className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <div className="bg-[#EAF6ED] pr-2 pl-1.5 py-0.5 flex items-center justify-center">
+                        <span className="text-[12px] font-medium text-[#52B774]">
+                          Verified
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <Link 
-                    href={`/creator/${creator.id}`}
-                    className="text-xs font-bold text-brand bg-[#f8f9fa] hover:bg-[#e9ecef] px-4 py-2 rounded-xl transition-colors border border-gray-200"
-                  >
-                    View Profile
-                  </Link>
                 </div>
+                
+                {/* Follow Button */}
+                {(!currentUser || currentUser.id !== creator.id) && creator.id !== "official" && (
+                  <button 
+                    onClick={handleFollow}
+                    disabled={isFollowLoading}
+                    className={`font-bold uppercase text-xs sm:text-sm px-5 sm:px-6 py-2 sm:py-2.5 rounded-xl transition-all shrink-0 tracking-wide border ${
+                      isFollowing 
+                        ? "bg-brand/10 text-brand border-brand/20 hover:bg-brand/20" 
+                        : "bg-[#f0f2f5] hover:bg-[#e4e7eb] text-gray-400 hover:text-gray-600 border-gray-200"
+                    } ${isFollowLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    {isFollowLoading ? "..." : isFollowing ? "FOLLOWING" : "FOLLOW"}
+                  </button>
+                )}
               </div>
             )}
 
-            <hr className="border-brand-border" />
-
-            {/* Tags Pills Section */}
-            <div>
-              <h3 className="font-extrabold text-xs uppercase tracking-wider text-brand mb-3">
-                Visual Tags
-              </h3>
-              <div className="flex flex-wrap gap-2">
+            {/* Mobile Tags (Only on mobile) */}
+            {tags && tags.length > 0 && (
+              <div className="flex sm:hidden flex-wrap gap-1.5 mt-2 mb-4">
                 {tags.map((tag, idx) => (
                   <Link
                     key={idx}
                     href={`/visuals?q=${encodeURIComponent(tag as string)}`}
-                    className="text-[10px] font-semibold px-3 py-1.5 rounded-full bg-white hover:bg-[#f3f3f3] text-brand hover:text-brand border border-brand-border hover:border-brand shadow-sm"
+                    className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-[#f2f2f2] hover:bg-[#e5e5e5] text-[#555] hover:text-[#333] transition-colors"
                   >
                     {tag}
                   </Link>
                 ))}
               </div>
-            </div>
+            )}
+
+
 
           </div>
         </div>
@@ -852,9 +970,8 @@ export default function ImageDetailPage({ params }: PageProps) {
           {/* Section 1: Related Visuals */}
           {relatedVisuals.length > 0 && (
             <div>
-              <h3 className="text-lg font-extrabold text-brand mb-6 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-brand" />
-                More from {visual.subject}
+              <h3 className="text-lg font-extrabold text-brand mb-6">
+                More like this
               </h3>
               <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-4 space-y-3 md:space-y-4 pb-4">
                 {relatedVisuals.map((item) => (

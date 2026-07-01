@@ -7,7 +7,7 @@ import { useAuthModal } from "@/store/useAuthModal";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export default function AuthModal() {
-  const { isOpen, close, triggerSuccess, intendedDownload, initialTab } = useAuthModal();
+  const { isOpen, close, triggerSuccess, intendedDownload, nextUrl, initialTab } = useAuthModal();
   
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [showPassword, setShowPassword] = useState(false);
@@ -92,10 +92,16 @@ export default function AuthModal() {
     if (isSupabaseConfigured()) {
       setIsLoading(true);
       try {
+        const fallbackUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/";
+        const finalNextUrl = nextUrl || fallbackUrl;
+        if (typeof document !== "undefined") {
+          document.cookie = `returnUrl=${encodeURIComponent(finalNextUrl)}; path=/; max-age=3600`;
+        }
+        
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback`,
+            redirectTo: `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(finalNextUrl)}`,
           },
         });
         if (error) {
@@ -165,6 +171,13 @@ export default function AuthModal() {
     
     if (isSupabaseConfigured()) {
       setIsLoading(true);
+      const fallbackUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/";
+      const finalNextUrl = nextUrl || fallbackUrl;
+
+      if (typeof document !== "undefined") {
+        document.cookie = `returnUrl=${encodeURIComponent(finalNextUrl)}; path=/; max-age=3600`;
+      }
+
       try {
         const { data, error } = await supabase.auth.signUp({
           email: signUpEmail,
@@ -174,7 +187,7 @@ export default function AuthModal() {
               name: name,
               role: selectedRole,
             },
-            emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+            emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(finalNextUrl)}` : undefined,
           },
         });
         if (error) throw error;

@@ -28,7 +28,16 @@ export default function Home() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("auth") === "required") {
-      setTimeout(() => useAuthModal.getState().open("signin"), 200);
+      const next = params.get("next");
+      setTimeout(() => {
+        if (next) {
+          useAuthModal.getState().open("signin", undefined, () => {
+            window.location.href = next;
+          }, next);
+        } else {
+          useAuthModal.getState().open("signin");
+        }
+      }, 200);
       window.history.replaceState({}, "", "/");
     }
   }, []);

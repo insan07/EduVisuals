@@ -21,9 +21,9 @@ CREATE TABLE IF NOT EXISTS uploader_profiles (
 ALTER TABLE uploader_profiles ENABLE ROW LEVEL SECURITY;
 
 -- Policies for uploader_profiles
--- Users can view their own uploader profile
-CREATE POLICY "Users can view their own uploader profile" ON uploader_profiles 
-  FOR SELECT USING (auth.uid() = id);
+-- Anyone can view uploader profiles (needed for public visual viewing pages)
+CREATE POLICY "Anyone can view uploader profiles" ON uploader_profiles 
+  FOR SELECT USING (true);
 
 -- Users can insert their own uploader profile
 CREATE POLICY "Users can insert their own uploader profile" ON uploader_profiles 
