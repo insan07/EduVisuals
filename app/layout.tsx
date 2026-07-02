@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import AuthModal from "@/components/AuthModal";
 import CollectionModal from "@/components/CollectionModal";
 import Toast from "@/components/Toast";
+import { GoogleAnalytics } from '@next/third-parties/google';
 import "./globals.css";
 
 const inter = Inter({
@@ -74,6 +75,7 @@ export default function RootLayout({
             `
           }}
         />
+        {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />}
       </body>
     </html>
   );
