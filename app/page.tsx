@@ -92,11 +92,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. WHY EDUVISUALS */}
+      {/* 2. WHY LEARNPIK */}
       <section className="py-20 px-4 bg-white border-y border-brand-border">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-brand mb-4">Why choose EduVisuals?</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-brand mb-4">Why choose LearnPik?</h2>
             <p className="text-brand-muted font-medium max-w-2xl mx-auto">
               We focus on delivering high-quality, scientifically accurate visuals designed specifically to align with local educational standards.
             </p>
@@ -142,7 +142,7 @@ export default function Home() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-extrabold text-brand mb-4">Built for Everyone</h2>
             <p className="text-brand-muted font-medium max-w-2xl mx-auto">
-              Whether you are preparing for exams or teaching a classroom, EduVisuals provides the assets you need.
+              Whether you are preparing for exams or teaching a classroom, LearnPik provides the assets you need.
             </p>
           </div>
 
@@ -216,7 +216,7 @@ export default function Home() {
         <div className="max-w-2xl mx-auto relative z-10">
           <h2 className="text-3xl md:text-4xl font-extrabold mb-6 text-[#073238]">Ready to elevate your learning?</h2>
           <p className="text-[rgba(0,57,60,0.7)] font-medium mb-10 text-sm md:text-base">
-            Join thousands of Global students using EduVisuals to study smarter, not harder.
+            Join thousands of Global students using LearnPik to study smarter, not harder.
           </p>
           <Link
             href="/visuals"

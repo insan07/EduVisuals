@@ -278,7 +278,7 @@ export default function AdminDashboard() {
       "Revision Note",
       "GCE Syllabus",
       "High Resolution",
-      "EduVisuals",
+      "LearnPik",
     ];
     setUploadTags(Array.from(new Set([...uploadTags, ...list])));
   };
@@ -604,7 +604,7 @@ export default function AdminDashboard() {
                 Overview Dashboard
               </h1>
               <p className="text-xs text-brand-muted font-semibold mt-1">
-                EduVisuals real-time system metrics.
+                LearnPik real-time system metrics.
               </p>
             </div>
 
@@ -795,7 +795,7 @@ export default function AdminDashboard() {
                           {item.title}
                         </span>
                         <span className="text-[10px] text-brand-faint font-semibold mt-0.5">
-                          Subject: {item.subject} · Grade: {item.grade} · Submitter: creator@eduvisuals.com
+                          Subject: {item.subject} · Grade: {item.grade} · Submitter: creator@learnpik.com
                         </span>
                       </div>
                     </div>
@@ -936,7 +936,7 @@ export default function AdminDashboard() {
                     <input
                       type="email"
                       required
-                      placeholder="creator@eduvisuals.com"
+                      placeholder="creator@learnpik.com"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       className="w-full bg-[#f3f3f3] border border-brand-border text-brand placeholder:text-[rgba(0,57,60,0.5)] px-3.5 py-3 rounded-xl outline-none focus:border-brand transition-all"

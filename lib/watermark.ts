@@ -1,4 +1,4 @@
-export async function downloadWithWatermark(imageUrl: string, filename: string, watermarkText = "EDUVISUALS") {
+export async function downloadWithWatermark(imageUrl: string, filename: string, watermarkText = "LEARNPIK") {
   return new Promise<void>((resolve, reject) => {
     const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
     const img = new Image();

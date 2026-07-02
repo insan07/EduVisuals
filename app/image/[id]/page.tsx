@@ -188,16 +188,16 @@ export default function ImageDetailPage({ params }: PageProps) {
             .maybeSingle();
             
           creatorProfile = { 
-            display_name: prof?.full_name || "EduVisuals Creator", 
+            display_name: prof?.full_name || "LearnPik Creator", 
             id: mappedImage.uploaded_by 
           };
         }
       } else {
         // Fallback for older images where uploaded_by is null
         creatorProfile = {
-          display_name: "EduVisuals Official",
+          display_name: "LearnPik Official",
           highest_qualification: "Platform Admin",
-          short_bio: "The official account of EduVisuals.",
+          short_bio: "The official account of LearnPik.",
           id: "official"
         };
       }
@@ -426,7 +426,7 @@ export default function ImageDetailPage({ params }: PageProps) {
       if (result.downloadUrl) {
         if (!result.isPremiumUser) {
           try {
-            await downloadWithWatermark(result.downloadUrl, visual.title || "eduvisuals-download");
+            await downloadWithWatermark(result.downloadUrl, visual.title || "learnpik-download");
             triggerToast("Download started!");
             return;
           } catch (e) {
@@ -593,7 +593,7 @@ export default function ImageDetailPage({ params }: PageProps) {
             </button>
             <a 
               href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                `Check out this educational visual aid: ${visual.title} - https://eduvisuals.com/image/${visual.id}`
+                `Check out this educational visual aid: ${visual.title} - https://learnpik.com/image/${visual.id}`
               )}`}
               target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
@@ -602,7 +602,7 @@ export default function ImageDetailPage({ params }: PageProps) {
             </a>
             <a 
               href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                `https://eduvisuals.com/image/${visual.id}`
+                `https://learnpik.com/image/${visual.id}`
               )}`}
               target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
@@ -678,9 +678,9 @@ export default function ImageDetailPage({ params }: PageProps) {
                 <div className="absolute inset-0 z-10 opacity-[0.05] pointer-events-none flex flex-col justify-around select-none text-brand uppercase font-black text-center text-xs tracking-[0.2em] leading-none rotate-[-25deg]">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="flex justify-around gap-4 whitespace-nowrap">
-                      <span>EduVisuals</span>
-                      <span>EduVisuals</span>
-                      <span>EduVisuals</span>
+                      <span>LearnPik</span>
+                      <span>LearnPik</span>
+                      <span>LearnPik</span>
                     </div>
                   ))}
                 </div>

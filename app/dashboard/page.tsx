@@ -827,7 +827,7 @@ export default function UserDashboard() {
                           <td className="py-3">Premium Renewal</td>
                           <td className="py-3">{formatLKR(499)}</td>
                           <td className="py-3 text-right">
-                            <button onClick={() => { alert("Invoice download coming soon. Contact support@eduvisuals.com"); }} className="text-brand font-bold hover:underline">
+                            <button onClick={() => { alert("Invoice download coming soon. Contact support@learnpik.com"); }} className="text-brand font-bold hover:underline">
                               Download
                             </button>
                           </td>
@@ -838,7 +838,7 @@ export default function UserDashboard() {
                           <td className="py-3">Premium Activation</td>
                           <td className="py-3">{formatLKR(499)}</td>
                           <td className="py-3 text-right">
-                            <button onClick={() => { alert("Invoice download coming soon. Contact support@eduvisuals.com"); }} className="text-brand font-bold hover:underline">
+                            <button onClick={() => { alert("Invoice download coming soon. Contact support@learnpik.com"); }} className="text-brand font-bold hover:underline">
                               Download
                             </button>
                           </td>

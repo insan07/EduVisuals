@@ -25,7 +25,7 @@ export default function OfflinePage() {
         </h1>
         
         <p className="text-xs md:text-sm text-brand-muted leading-relaxed mb-6 font-medium">
-          Check your network connection and try reloading the page. EduVisuals requires an active internet connection to search and download high-resolution visuals.
+          Check your network connection and try reloading the page. LearnPik requires an active internet connection to search and download high-resolution visuals.
         </p>
 
         <div className="flex flex-col gap-2">
@@ -47,7 +47,7 @@ export default function OfflinePage() {
         </div>
 
         <p className="text-[10px] text-brand-faint mt-6">
-          EduVisuals · Offline Visual Library Cache
+          LearnPik · Offline Visual Library Cache
         </p>
       </div>
     </div>

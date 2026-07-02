@@ -54,13 +54,13 @@ export default function CategoryLandingPage({ params }: CategoryPageProps) {
   const schemaStructuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "name": `${subjectName} Diagrams & Mind Maps for Students & Educators | EduVisuals`,
+    "name": `${subjectName} Diagrams & Mind Maps for Students & Educators | LearnPik`,
     "description": `Download free AI-generated ${subjectName.toLowerCase()} diagrams, mind maps, and study visuals for students and educators across all academic levels worldwide.`,
-    "url": `https://eduvisuals.com/category/${subjectSlug}`,
+    "url": `https://learnpik.com/category/${subjectSlug}`,
     "provider": {
       "@type": "Organization",
-      "name": "EduVisuals",
-      "logo": "https://eduvisuals.com/logo.png"
+      "name": "LearnPik",
+      "logo": "https://learnpik.com/logo.png"
     }
   };
 

@@ -64,7 +64,7 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ id: s
           .maybeSingle();
         
         if (prof) {
-          creatorProfile = { display_name: prof.full_name || "EduVisuals Creator", id: creatorId };
+          creatorProfile = { display_name: prof.full_name || "LearnPik Creator", id: creatorId };
         }
       }
 
@@ -72,7 +72,7 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ id: s
         // Fallback for orphaned uploads so the page doesn't just error out
         creatorProfile = { 
           id: creatorId,
-          display_name: "EduVisuals Creator",
+          display_name: "LearnPik Creator",
           short_bio: "A legacy creator account.",
         };
       }

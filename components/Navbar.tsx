@@ -185,7 +185,7 @@ export default function Navbar() {
                 />
               </div>
               <span className="text-brand font-bold text-xl md:text-2xl tracking-tight">
-                Edu<span className="text-brand group-hover:text-brand transition-colors">Visuals</span>
+                Learn<span className="text-brand group-hover:text-brand transition-colors">Pik</span>
               </span>
             </Link>
 

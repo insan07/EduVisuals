@@ -18,7 +18,7 @@ export default function AboutPage() {
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-brand tracking-tight leading-none mb-3">
-            About EduVisuals
+            About LearnPik
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-brand-muted max-w-xl mx-auto font-medium">
             Empowering Global students and educators with high-fidelity, local curriculum-aligned visual study aids.
@@ -51,7 +51,7 @@ export default function AboutPage() {
                 Our Visual Solution <Sparkles className="w-4 h-4 text-brand" />
               </h3>
               <p className="text-xs text-[rgba(0,57,60,0.7)] leading-relaxed font-medium">
-                EduVisuals bridges this gap by offering a curated repository of clean, high-resolution, AI-upscaled educational mind maps, anatomy diagrams, cycle flowcharts, and cheat sheets. Every visual asset is tailored specifically to the National, Cambridge, and Edexcel syllabi, reviewed by educators, and offered in high-resolution vector and HD formats.
+                LearnPik bridges this gap by offering a curated repository of clean, high-resolution, AI-upscaled educational mind maps, anatomy diagrams, cycle flowcharts, and cheat sheets. Every visual asset is tailored specifically to the National, Cambridge, and Edexcel syllabi, reviewed by educators, and offered in high-resolution vector and HD formats.
               </p>
             </div>
           </div>

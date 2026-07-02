@@ -241,7 +241,7 @@ function SearchResultsContent() {
     }
     
     try {
-      await downloadWithWatermark(visual.file_url!, visual.title || "eduvisuals-download");
+      await downloadWithWatermark(visual.file_url!, visual.title || "learnpik-download");
     } catch (e) {
       console.error("Watermark generation failed, falling back to direct download", e);
       const downloadUrl = visual.file_url!.includes('?') 
@@ -250,7 +250,7 @@ function SearchResultsContent() {
       
       const link = document.createElement("a");
       link.href = downloadUrl;
-      link.download = visual.title || "eduvisuals-download";
+      link.download = visual.title || "learnpik-download";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

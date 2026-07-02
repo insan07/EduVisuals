@@ -144,7 +144,7 @@ export default function UploaderOnboardingPage() {
               />
             </div>
             <span className="font-black text-2xl tracking-tight">
-              EduVisuals
+              LearnPik
             </span>
           </Link>
 
@@ -196,7 +196,7 @@ export default function UploaderOnboardingPage() {
               />
             </div>
             <span className="font-black text-brand text-lg tracking-tight">
-              EduVisuals
+              LearnPik
             </span>
           </Link>
           <span className="text-xs font-bold text-brand bg-brand/5 px-2 py-1 rounded-md">Creator Program</span>
@@ -388,7 +388,7 @@ export default function UploaderOnboardingPage() {
                     <div>
                       <h3 className="font-bold text-brand text-lg mb-1">Original Content Policy</h3>
                       <p className="text-sm text-brand-muted leading-relaxed font-medium">
-                        EduVisuals strictly prohibits the uploading of copyrighted materials you do not own. All visuals, diagrams, and notes must be your original creation or explicitly licensed for free distribution.
+                        LearnPik strictly prohibits the uploading of copyrighted materials you do not own. All visuals, diagrams, and notes must be your original creation or explicitly licensed for free distribution.
                       </p>
                     </div>
                   </div>
@@ -433,7 +433,7 @@ export default function UploaderOnboardingPage() {
                       <CheckCircle2 className="w-4 h-4 text-white absolute pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" />
                     </div>
                     <span className="text-sm font-bold text-brand group-hover:text-[#00393c] transition-colors leading-relaxed">
-                      I have read and agree to adhere to the EduVisuals quality standards.
+                      I have read and agree to adhere to the LearnPik quality standards.
                     </span>
                   </label>
                 </div>
