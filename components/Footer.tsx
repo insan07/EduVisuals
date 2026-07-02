@@ -38,7 +38,7 @@ export default function Footer() {
               />
             </div>
             <span className="text-white font-bold text-xl md:text-2xl tracking-tight">
-              Learn<span className="text-white group-hover:text-emerald-300 transition-colors">Pik</span>
+              Learn<span className="text-white group-hover:text-emerald-300 transition-colors">pik</span>
             </span>
           </Link>
           <p className="text-white/70 text-sm font-normal leading-relaxed">
@@ -78,7 +78,7 @@ export default function Footer() {
 
       {/* Bottom Copyright bar */}
       <div className="max-w-7xl mx-auto mt-8 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/50">
-        <p>&copy; {currentYear} LearnPik. All rights reserved.</p>
+        <p>&copy; {currentYear} Learnpik. All rights reserved.</p>
         <p>Premium Education Visuals Platform</p>
       </div>
     </footer>

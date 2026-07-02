@@ -1,6 +1,6 @@
 {
   "name": "learnpik.com — World's Educational Visual Library",
-  "short_name": "LearnPik",
+  "short_name": "Learnpik",
   "description": "World's premier AI educational image library. Access high-quality diagrams, mind maps, and study aids.",
   "start_url": "/",
   "display": "standalone",
@@ -15,7 +15,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "https://placehold.co/512x512/073238/ffffff?text=LearnPik",
+      "src": "https://placehold.co/512x512/073238/ffffff?text=Learnpik",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

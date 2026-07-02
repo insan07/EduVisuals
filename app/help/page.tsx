@@ -32,7 +32,7 @@ export default function HelpPage() {
             We handle all support tickets via email to ensure you get the fastest, most personalized help possible.
           </p>
           
-          <a href="mailto:support@learnpik.com?subject=LearnPik Support Request"
+          <a href="mailto:support@learnpik.com?subject=Learnpik Support Request"
             className="w-full sm:w-auto px-10 py-4 bg-brand hover:opacity-90 text-white font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
             <Mail className="w-4 h-4" />
             Email Support Team

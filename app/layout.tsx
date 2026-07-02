@@ -15,23 +15,23 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "LearnPik — World's Premium AI Educational Visual Library",
+  title: "Learnpik — World's Premium AI Educational Visual Library",
   description:
     "World's premier AI educational image platform. Access high-quality, local curriculum-aligned diagrams, illustrations, and visual aids for science, history, geography, and more.",
   metadataBase: new URL("https://learnpik.com"),
   manifest: "/manifest.json",
   openGraph: {
-    title: "LearnPik — World's Premium AI Educational Visual Library",
+    title: "Learnpik — World's Premium AI Educational Visual Library",
     description:
       "World's premier AI educational image platform. Access high-quality, local curriculum-aligned diagrams, illustrations, and visual aids for science, history, geography, and more.",
     url: "https://learnpik.com",
-    siteName: "LearnPik",
+    siteName: "Learnpik",
     images: [
       {
         url: "/images/og-image.png",
         width: 1200,
         height: 630,
-        alt: "LearnPik — World's Educational Visual Library",
+        alt: "Learnpik — World's Educational Visual Library",
       },
     ],
     locale: "en_LK",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "LearnPik — World's Premium AI Educational Visual Library",
+    title: "Learnpik — World's Premium AI Educational Visual Library",
     description:
       "World's premier AI educational image platform. Access high-quality, local curriculum-aligned diagrams, illustrations, and visual aids.",
     images: ["/images/og-image.png"],

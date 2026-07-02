@@ -1,4 +1,4 @@
-// In-memory Sliding Window Rate Limiter for LearnPik
+// In-memory Sliding Window Rate Limiter for Learnpik
 
 interface RateLimitConfig {
   limit: number;       // Max requests

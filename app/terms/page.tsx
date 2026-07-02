@@ -10,12 +10,12 @@ export default function TermsPage() {
         <div className="space-y-6 text-sm leading-relaxed font-medium">
           <section>
             <h2 className="text-xl font-bold mb-3">1. Introduction</h2>
-            <p className="text-brand-muted">Welcome to LearnPik. By accessing our website, you agree to these terms and conditions. These terms govern your use of the platform, the download of visual assets, and the creation of an account.</p>
+            <p className="text-brand-muted">Welcome to Learnpik. By accessing our website, you agree to these terms and conditions. These terms govern your use of the platform, the download of visual assets, and the creation of an account.</p>
           </section>
           
           <section>
             <h2 className="text-xl font-bold mb-3">2. Intellectual Property Rights</h2>
-            <p className="text-brand-muted">All visual content, educational diagrams, mind maps, and text available on LearnPik are the intellectual property of LearnPik or its contributors. You may not claim ownership of any content downloaded from this site.</p>
+            <p className="text-brand-muted">All visual content, educational diagrams, mind maps, and text available on Learnpik are the intellectual property of Learnpik or its contributors. You may not claim ownership of any content downloaded from this site.</p>
           </section>
           
           <section>
@@ -26,12 +26,12 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl font-bold mb-3">4. Partner/Contributor Accounts</h2>
-            <p className="text-brand-muted">Approved contributors may upload visual content. By uploading, you grant LearnPik a non-exclusive license to display, distribute, and monetize the content on the platform. Contributors must ensure they hold the necessary rights to upload their content.</p>
+            <p className="text-brand-muted">Approved contributors may upload visual content. By uploading, you grant Learnpik a non-exclusive license to display, distribute, and monetize the content on the platform. Contributors must ensure they hold the necessary rights to upload their content.</p>
           </section>
 
           <section>
             <h2 className="text-xl font-bold mb-3">5. Disclaimer</h2>
-            <p className="text-brand-muted">The educational materials on this site are provided "as is" without warranty of any kind. While we strive for absolute accuracy in our scientific and educational visuals, LearnPik is not liable for any academic or professional consequences arising from the use of our diagrams.</p>
+            <p className="text-brand-muted">The educational materials on this site are provided "as is" without warranty of any kind. While we strive for absolute accuracy in our scientific and educational visuals, Learnpik is not liable for any academic or professional consequences arising from the use of our diagrams.</p>
           </section>
 
           <section>

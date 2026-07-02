@@ -48,7 +48,7 @@ export default function UploaderDashboardLayout({
               }}
             />
           </div>
-          <span className="font-black text-brand text-lg tracking-tight">LearnPik</span>
+          <span className="font-black text-brand text-lg tracking-tight">Learnpik</span>
         </Link>
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -85,7 +85,7 @@ export default function UploaderDashboardLayout({
               />
             </div>
             <span className="text-brand font-black text-xl tracking-tight leading-none">
-              Learn<span className="text-brand group-hover:text-brand transition-colors">Pik</span>
+              Learn<span className="text-brand group-hover:text-brand transition-colors">pik</span>
             </span>
           </Link>
 
@@ -125,7 +125,7 @@ export default function UploaderDashboardLayout({
               className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-brand hover:bg-brand/5 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              Back to LearnPik
+              Back to Learnpik
             </Link>
           </div>
         </div>

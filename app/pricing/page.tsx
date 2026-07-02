@@ -28,7 +28,7 @@ export default function PricingPage() {
           </span>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-brand tracking-tight leading-none mb-4">
-          Unlock Premium LearnPik
+          Unlock Premium Learnpik
         </h1>
         <p className="text-base sm:text-lg text-brand-muted max-w-2xl mx-auto mb-10 font-medium">
           Perfect for students, teachers, and institutions across the World. Cancel or change plans anytime.

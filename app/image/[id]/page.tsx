@@ -188,16 +188,16 @@ export default function ImageDetailPage({ params }: PageProps) {
             .maybeSingle();
             
           creatorProfile = { 
-            display_name: prof?.full_name || "LearnPik Creator", 
+            display_name: prof?.full_name || "Learnpik Creator", 
             id: mappedImage.uploaded_by 
           };
         }
       } else {
         // Fallback for older images where uploaded_by is null
         creatorProfile = {
-          display_name: "LearnPik Official",
+          display_name: "Learnpik Official",
           highest_qualification: "Platform Admin",
-          short_bio: "The official account of LearnPik.",
+          short_bio: "The official account of Learnpik.",
           id: "official"
         };
       }
@@ -678,9 +678,9 @@ export default function ImageDetailPage({ params }: PageProps) {
                 <div className="absolute inset-0 z-10 opacity-[0.05] pointer-events-none flex flex-col justify-around select-none text-brand uppercase font-black text-center text-xs tracking-[0.2em] leading-none rotate-[-25deg]">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="flex justify-around gap-4 whitespace-nowrap">
-                      <span>LearnPik</span>
-                      <span>LearnPik</span>
-                      <span>LearnPik</span>
+                      <span>Learnpik</span>
+                      <span>Learnpik</span>
+                      <span>Learnpik</span>
                     </div>
                   ))}
                 </div>

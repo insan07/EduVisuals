@@ -278,7 +278,7 @@ export default function AdminDashboard() {
       "Revision Note",
       "GCE Syllabus",
       "High Resolution",
-      "LearnPik",
+      "Learnpik",
     ];
     setUploadTags(Array.from(new Set([...uploadTags, ...list])));
   };
@@ -604,7 +604,7 @@ export default function AdminDashboard() {
                 Overview Dashboard
               </h1>
               <p className="text-xs text-brand-muted font-semibold mt-1">
-                LearnPik real-time system metrics.
+                Learnpik real-time system metrics.
               </p>
             </div>
 
