@@ -20,14 +20,14 @@ export default function Footer() {
         {/* Left Section: Logo, Tagline & Flag */}
         <div className="flex flex-col gap-3 max-w-sm">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative flex items-center justify-center w-8 h-8 transition-transform duration-300 group-hover:scale-110 translate-y-0.9">
+            <div className="relative flex items-center justify-center w-7 h-7 transition-transform duration-300 group-hover:scale-110 translate-y-0.9">
               <div
                 style={{
                   backgroundColor: "#ffffff",
-                  maskImage: "url('/logo.png?v=2')",
-                  WebkitMaskImage: "url('/logo.png?v=2')",
-                  maskSize: "180%",
-                  WebkitMaskSize: "180%",
+                  maskImage: "url('/logo.png?v=3')",
+                  WebkitMaskImage: "url('/logo.png?v=3')",
+                  maskSize: "100%",
+                  WebkitMaskSize: "100%",
                   maskRepeat: "no-repeat",
                   WebkitMaskRepeat: "no-repeat",
                   maskPosition: "center",
@@ -78,7 +78,7 @@ export default function Footer() {
 
       {/* Bottom Copyright bar */}
       <div className="max-w-7xl mx-auto mt-8 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/50">
-        <p>&copy; {currentYear} Learnpik. All rights reserved.</p>
+        <p>&copy; {currentYear} Learnpik.com. All rights reserved.</p>
         <p>Premium Education Visuals Platform</p>
       </div>
     </footer>

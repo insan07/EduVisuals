@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Settings as SettingsIcon, Save } from "lucide-react";
+import { Loader2, Settings as SettingsIcon, Save, Upload, User } from "lucide-react";
 
 export default function UploaderSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -13,6 +13,11 @@ export default function UploaderSettingsPage() {
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [portfolio, setPortfolio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -21,7 +26,7 @@ export default function UploaderSettingsPage() {
 
       const { data } = await supabase
         .from("uploader_profiles")
-        .select("*")
+        .select("*, profiles(avatar_url)")
         .eq("id", session.user.id)
         .single();
 
@@ -30,15 +35,60 @@ export default function UploaderSettingsPage() {
         setDisplayName(data.display_name || "");
         setBio(data.short_bio || "");
         setPortfolio(data.portfolio_url || "");
+        if (data.profiles && (data.profiles as any).avatar_url) {
+          setAvatarUrl((data.profiles as any).avatar_url);
+        }
       }
       setLoading(false);
     }
     loadProfile();
   }, []);
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSave = async () => {
     if (!profile) return;
     setSaving(true);
+    
+    let currentAvatarUrl = avatarUrl;
+    
+    // Upload new avatar if selected
+    if (avatarFile) {
+      const fileExt = avatarFile.name.split('.').pop();
+      const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("visuals")
+        .upload(filePath, avatarFile);
+        
+      if (uploadError) {
+        alert("Failed to upload profile picture.");
+        setSaving(false);
+        return;
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from("visuals")
+        .getPublicUrl(filePath);
+        
+      currentAvatarUrl = publicUrl;
+      setAvatarUrl(currentAvatarUrl);
+      
+      // Update profiles table
+      await supabase
+        .from("profiles")
+        .update({ avatar_url: currentAvatarUrl })
+        .eq("id", profile.id);
+    }
+
+    // Update uploader_profiles table
     const { error } = await supabase
       .from("uploader_profiles")
       .update({
@@ -76,6 +126,38 @@ export default function UploaderSettingsPage() {
 
       <div className="bg-white rounded-3xl border border-brand-border p-6 md:p-8 shadow-sm">
         <div className="flex flex-col gap-6">
+          
+          {/* Profile Picture Upload */}
+          <div>
+            <label className="block text-sm font-bold text-brand mb-4">Profile Picture</label>
+            <div className="flex items-center gap-6">
+              <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200 overflow-hidden shadow-sm shrink-0">
+                {avatarPreview || avatarUrl ? (
+                  <img src={avatarPreview || avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-10 h-10 text-gray-400" />
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-white border border-brand-border text-brand font-bold px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center gap-2 shadow-sm"
+                >
+                  <Upload className="w-4 h-4" /> Choose New Picture
+                </button>
+                <p className="text-xs text-brand-muted font-medium">JPEG, PNG or WEBP. Max 2MB.</p>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleAvatarChange} 
+                  accept="image/png, image/jpeg, image/webp" 
+                  className="hidden" 
+                />
+              </div>
+            </div>
+          </div>
+
+          <hr className="border-brand-border" />
           
           <div>
             <label className="block text-sm font-bold text-brand mb-2">Display Name</label>

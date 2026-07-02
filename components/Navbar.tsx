@@ -157,8 +157,8 @@ export default function Navbar() {
     <>
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-            ? "bg-white/95 backdrop-blur-md border-b border-brand-border shadow-sm"
-            : "bg-white border-b border-brand-border"
+            ? "bg-white/80 backdrop-blur-xl border-b border-brand/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+            : "bg-white border-b border-brand/5"
           } ${isDashboard ? "hidden md:block" : ""}`}
       >
         {/* Height: 64px desktop (h-16), 56px mobile (h-14) */}
@@ -167,14 +167,14 @@ export default function Navbar() {
           {/* Left: Logo */}
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 group z-50">
-              <div className="relative flex items-center justify-center w-7 h-7 transition-transform duration-300 group-hover:scale-110 translate-y-0.99">
+              <div className="relative flex items-center justify-center w-6 h-6 transition-transform duration-300 group-hover:scale-110 translate-y-0.99">
                 <div
                   style={{
                     backgroundColor: "#073238",
-                    maskImage: "url('/logo.png?v=2')",
-                    WebkitMaskImage: "url('/logo.png?v=2')",
-                    maskSize: "180%",
-                    WebkitMaskSize: "180%",
+                    maskImage: "url('/logo.png?v=3')",
+                    WebkitMaskImage: "url('/logo.png?v=3')",
+                    maskSize: "100%",
+                    WebkitMaskSize: "100%",
                     maskRepeat: "no-repeat",
                     WebkitMaskRepeat: "no-repeat",
                     maskPosition: "center",
@@ -190,9 +190,9 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop Navigation Links */}
-            <div className="hidden lg:flex items-center gap-6 ml-8 text-sm font-bold text-brand select-none whitespace-nowrap">
-              <Link href="/" className="hover:text-brand transition-colors">Home</Link>
-              <Link href="/visuals" className="hover:text-brand transition-colors">Visuals</Link>
+            <div className="hidden lg:flex items-center gap-1 ml-8 text-sm font-medium text-brand/80 select-none whitespace-nowrap">
+              <Link href="/" className="px-4 py-2 rounded-full hover:bg-black/5 hover:text-brand transition-all">Home</Link>
+              <Link href="/visuals" className="px-4 py-2 rounded-full hover:bg-black/5 hover:text-brand transition-all">Visuals</Link>
 
               {/* Company Dropdown Trigger */}
               <div
@@ -205,48 +205,48 @@ export default function Navbar() {
                     e.stopPropagation();
                     setShowResourcesDropdown(!showResourcesDropdown);
                   }}
-                  className="flex items-center gap-0.5 hover:text-brand transition-colors focus:outline-none cursor-pointer"
+                  className="flex items-center gap-1 px-4 py-2 rounded-full hover:bg-black/5 hover:text-brand transition-all focus:outline-none cursor-pointer"
                 >
                   Company
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showResourcesDropdown ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 opacity-70 transition-transform duration-200 ${showResourcesDropdown ? "rotate-180" : ""}`} />
                 </button>
 
                 {/* Company Dropdown Card */}
                 {showResourcesDropdown && (
-                  <div className="absolute left-0 mt-1.5 w-48 bg-white border border-brand-border rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150 text-sm font-semibold text-brand">
+                  <div className="absolute left-0 mt-2 w-52 bg-white border border-brand/5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 text-sm font-medium text-brand/90">
                     <Link
                       href="/contact"
-                      className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-black/5 hover:text-brand transition-colors"
                     >
-                      <Mail className="w-3.5 h-3.5 text-brand-muted" />
+                      <Mail className="w-4 h-4 opacity-70" />
                       Contact Us
                     </Link>
                     <Link
                       href="/about"
-                      className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-black/5 hover:text-brand transition-colors"
                     >
-                      <Info className="w-3.5 h-3.5 text-brand-muted" />
+                      <Info className="w-4 h-4 opacity-70" />
                       About Us
                     </Link>
                     <Link
                       href="/help"
-                      className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#f3f3f3] hover:text-brand transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-black/5 hover:text-brand transition-colors"
                     >
-                      <HelpCircle className="w-3.5 h-3.5 text-brand-muted" />
+                      <HelpCircle className="w-4 h-4 opacity-70" />
                       Get Help
                     </Link>
                   </div>
                 )}
               </div>
 
-              <Link href="/pricing" className="hover:text-brand transition-colors">Pricing</Link>
+              <Link href="/pricing" className="px-4 py-2 rounded-full hover:bg-black/5 hover:text-brand transition-all">Pricing</Link>
               {user ? (
-                <Link href="/uploader" className="text-sm font-bold text-brand hover:text-[#00393c] transition-colors flex items-center gap-1.5 ml-2 bg-[#f3f3f3] px-3 py-1.5 rounded-full border border-brand-border">
-                  <UploadIcon className="w-3.5 h-3.5" /> Upload Visual
+                <Link href="/uploader" className="text-sm font-semibold text-white bg-brand hover:bg-brand/90 transition-all flex items-center gap-1.5 ml-4 px-4 py-2 rounded-full shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                  <UploadIcon className="w-4 h-4" /> Upload
                 </Link>
               ) : (
-                <button onClick={() => useAuthModal.getState().open("signup")} className="text-sm font-bold text-brand hover:text-[#00393c] transition-colors flex items-center gap-1.5 ml-2 bg-[#f3f3f3] px-3 py-1.5 rounded-full border border-brand-border cursor-pointer">
-                  <UploadIcon className="w-3.5 h-3.5" /> Upload Visual
+                <button onClick={() => useAuthModal.getState().open("signup")} className="text-sm font-semibold text-white bg-brand hover:bg-brand/90 transition-all flex items-center gap-1.5 ml-4 px-4 py-2 rounded-full shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
+                  <UploadIcon className="w-4 h-4" /> Upload
                 </button>
               )}
             </div>
@@ -268,18 +268,15 @@ export default function Navbar() {
                     e.stopPropagation();
                     setShowProfileDropdown(!showProfileDropdown);
                   }}
-                  className="flex items-center gap-2 md:px-3 px-1.5 md:py-1.5 py-1.5 bg-[#f3f3f3] hover:bg-[#e8ecec] rounded-full border border-brand-border cursor-pointer transition-all duration-200 select-none"
+                  className="flex items-center justify-center w-10 h-10 bg-black/5 hover:bg-black/10 rounded-full cursor-pointer transition-all duration-300 select-none hover:-translate-y-0.5 shadow-sm"
                 >
                   {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-7 h-7 md:w-6 md:h-6 rounded-full object-cover shadow-sm" />
+                    <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white" />
                   ) : (
-                    <span className="w-7 h-7 md:w-6 md:h-6 rounded-full bg-purple text-white text-[11px] font-black flex items-center justify-center shadow-sm">
+                    <span className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-[12px] font-black flex items-center justify-center shadow-sm ring-2 ring-white">
                       {user.name.charAt(0).toUpperCase()}
                     </span>
                   )}
-                  <span className="hidden md:block text-xs font-bold text-brand max-w-[100px] truncate">
-                    {user.name}
-                  </span>
                 </button>
 
                 {/* Dropdown Menu / Mobile Bottom Sheet */}
@@ -351,15 +348,15 @@ export default function Navbar() {
               <div className="hidden md:flex items-center gap-3">
                 <button
                   onClick={() => useAuthModal.getState().open("signin")}
-                  className="px-5 py-2 text-brand border border-brand-border hover:bg-[#f3f3f3] text-sm font-bold rounded-md transition-all duration-300 cursor-pointer"
+                  className="px-5 py-2.5 text-brand/80 hover:text-brand hover:bg-black/5 text-sm font-semibold rounded-full transition-all cursor-pointer"
                 >
-                  Login
+                  Log in
                 </button>
                 <button
                   onClick={() => useAuthModal.getState().open("signup")}
-                  className="px-5 py-2 bg-brand hover:bg-brand text-white text-sm font-black rounded-md transition-all duration-300 shadow-sm hover:scale-[1.02] cursor-pointer"
+                  className="px-5 py-2.5 bg-brand text-white text-sm font-semibold rounded-full transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:bg-brand/90 hover:-translate-y-0.5 cursor-pointer"
                 >
-                  Sign Up
+                  Sign up
                 </button>
               </div>
             )}

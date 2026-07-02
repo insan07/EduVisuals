@@ -50,21 +50,24 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ id: s
       let creatorProfile = null;
       const { data: uploader, error: uploaderErr } = await supabase
         .from("uploader_profiles")
-        .select("*")
+        .select("*, profiles(avatar_url)")
         .eq("id", creatorId)
         .single();
 
       if (uploader) {
-        creatorProfile = uploader;
+        creatorProfile = {
+          ...uploader,
+          avatar_url: uploader.profiles ? (uploader.profiles as any).avatar_url : null
+        };
       } else {
         const { data: prof } = await supabase
           .from("profiles")
-          .select("full_name")
+          .select("full_name, avatar_url")
           .eq("id", creatorId)
           .maybeSingle();
         
         if (prof) {
-          creatorProfile = { display_name: prof.full_name || "Learnpik Creator", id: creatorId };
+          creatorProfile = { display_name: prof.full_name || "Learnpik Creator", id: creatorId, avatar_url: prof.avatar_url };
         }
       }
 

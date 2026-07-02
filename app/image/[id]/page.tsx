@@ -24,6 +24,7 @@ import {
   Sparkles,
   ArrowLeft,
   ChevronLeft,
+  ChevronDown,
   BookOpen,
   FileImage,
   MoreHorizontal,
@@ -33,6 +34,7 @@ import {
   Trash2,
   Bookmark,
   UserCheck,
+  BadgeCheck,
 } from "lucide-react";
 import { GRADES, SUBJECTS, TYPES, SYLLABUSES, MEDIUMS } from "@/lib/constants";
 import EditVisualModal from "@/components/EditVisualModal";
@@ -80,6 +82,7 @@ export default function ImageDetailPage({ params }: PageProps) {
   const [toastMessage, setToastMessage] = useState("");
   const [showUpsell, setShowUpsell] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDownloadDropdownOpen, setIsDownloadDropdownOpen] = useState(false);
   const [isMoreDropdownOpen, setIsMoreDropdownOpen] = useState(false);
   
   const [relatedVisuals, setRelatedVisuals] = useState<any[]>([]);
@@ -173,23 +176,28 @@ export default function ImageDetailPage({ params }: PageProps) {
         // We'll add a public select policy via SQL later, but for now we fallback gracefully.
         const { data: uploader } = await supabase
           .from("uploader_profiles")
-          .select("display_name, highest_qualification, short_bio, portfolio_url")
+          .select("display_name, highest_qualification, short_bio, portfolio_url, profiles(avatar_url)")
           .eq("id", mappedImage.uploaded_by)
           .maybeSingle();
         
         if (uploader) {
-          creatorProfile = { ...uploader, id: mappedImage.uploaded_by };
+          creatorProfile = { 
+            ...uploader, 
+            id: mappedImage.uploaded_by,
+            avatar_url: uploader.profiles ? (uploader.profiles as any).avatar_url : null
+          };
         } else {
           // fallback to profiles if uploader_profiles fails (e.g. RLS or not onboarded)
           const { data: prof } = await supabase
             .from("profiles")
-            .select("full_name")
+            .select("full_name, avatar_url")
             .eq("id", mappedImage.uploaded_by)
             .maybeSingle();
             
           creatorProfile = { 
             display_name: prof?.full_name || "Learnpik Creator", 
-            id: mappedImage.uploaded_by 
+            id: mappedImage.uploaded_by,
+            avatar_url: prof?.avatar_url
           };
         }
       } else {
@@ -399,7 +407,7 @@ export default function ImageDetailPage({ params }: PageProps) {
     setTimeout(() => setShowToast(false), 3000);
   };
 
-  const handleDownloadClick = async (type?: string) => {
+  const handleDownloadClick = async (action: "all" | "current" = "current") => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       useAuthModal.getState().open("signin");
@@ -424,27 +432,35 @@ export default function ImageDetailPage({ params }: PageProps) {
       if (result.limitReached) { alert("Daily limit reached (5/day). Upgrade to Premium!"); return; }
       
       if (result.downloadUrl) {
-        if (!result.isPremiumUser) {
-          try {
-            await downloadWithWatermark(result.downloadUrl, visual.title || "learnpik-download");
-            triggerToast("Download started!");
-            return;
-          } catch (e) {
-            console.error("Watermark failed, falling back", e);
-          }
-        }
+        const allImageUrls = [visual.file_url, ...(visual.additional_urls || [])].filter(Boolean);
+        const urlsToDownload = action === "all" ? allImageUrls : [allImageUrls[currentImageIndex] || visual.file_url];
         
-        const urlToDownload = result.downloadUrl.includes('?') 
-          ? `${result.downloadUrl}&download=` 
-          : `${result.downloadUrl}?download=`;
-        const a = document.createElement("a");
-        a.href = urlToDownload;
-        a.download = visual.title || "download";
-        a.target = "_blank";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        triggerToast("Download started!");
+        triggerToast(urlsToDownload.length > 1 ? "Downloading images..." : "Download started!");
+
+        for (let i = 0; i < urlsToDownload.length; i++) {
+          const url = urlsToDownload[i];
+          const suffix = urlsToDownload.length > 1 ? `-${i+1}` : "";
+          const filename = `${visual.title || "learnpik"}${suffix}`;
+
+          if (!result.isPremiumUser) {
+            try {
+              await downloadWithWatermark(url, filename);
+            } catch (e) {
+              console.error("Watermark failed, falling back", e);
+            }
+          } else {
+            const urlToDownload = url.includes('?') ? `${url}&download=` : `${url}?download=`;
+            const a = document.createElement("a");
+            a.href = urlToDownload;
+            a.download = filename;
+            a.target = "_blank";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
+          
+          if (urlsToDownload.length > 1) await new Promise(r => setTimeout(r, 500));
+        }
       }
     } catch (error) {
       triggerToast("Error initiating download. Please try again.");
@@ -678,9 +694,9 @@ export default function ImageDetailPage({ params }: PageProps) {
                 <div className="absolute inset-0 z-10 opacity-[0.05] pointer-events-none flex flex-col justify-around select-none text-brand uppercase font-black text-center text-xs tracking-[0.2em] leading-none rotate-[-25deg]">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="flex justify-around gap-4 whitespace-nowrap">
-                      <span>Learnpik</span>
-                      <span>Learnpik</span>
-                      <span>Learnpik</span>
+                      <span>Learnpik.com</span>
+                      <span>Learnpik.com</span>
+                      <span>Learnpik.com</span>
                     </div>
                   ))}
                 </div>
@@ -809,24 +825,70 @@ export default function ImageDetailPage({ params }: PageProps) {
               {renderActionButtons("hidden sm:flex")}
 
               {/* Download Button (Right) */}
-              <div className="w-full sm:w-auto sm:ml-auto">
-                {visual.is_premium && userState !== "premium" ? (
-                  <button 
-                    onClick={() => setShowUpsell(true)}
-                    className="w-full bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold text-sm py-2.5 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5"
-                  >
-                    <Crown className="w-4 h-4" />
-                    Download Premium
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => handleDownloadClick()}
-                    className="w-full bg-brand hover:bg-brand/90 text-white font-extrabold text-sm py-2.5 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download Visual
-                  </button>
-                )}
+              <div className="w-full sm:w-auto sm:ml-auto relative">
+                {(() => {
+                  const hasMultiple = (visual.additional_urls || []).length > 0;
+                  
+                  if (visual.is_premium && userState !== "premium") {
+                    return (
+                      <button 
+                        onClick={() => setShowUpsell(true)}
+                        className="w-full bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold text-sm py-2.5 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5"
+                      >
+                        <Crown className="w-4 h-4" />
+                        Download Premium
+                      </button>
+                    );
+                  }
+
+                  if (!hasMultiple) {
+                    return (
+                      <button 
+                        onClick={() => handleDownloadClick("current")}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm py-2.5 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download Visual
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <div className="flex w-full">
+                      <button 
+                        onClick={() => handleDownloadClick("current")}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm py-2.5 px-4 rounded-l-xl transition-all shadow-md flex items-center justify-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download Visual
+                      </button>
+                      <button
+                        onClick={() => setIsDownloadDropdownOpen(!isDownloadDropdownOpen)}
+                        onBlur={() => setTimeout(() => setIsDownloadDropdownOpen(false), 200)}
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white px-3 rounded-r-xl transition-all shadow-md flex items-center justify-center border-l border-emerald-800"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+
+                      {isDownloadDropdownOpen && (
+                        <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-brand-border rounded-xl shadow-lg z-30 py-2 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                          <button 
+                            onMouseDown={(e) => { e.preventDefault(); handleDownloadClick("current"); setIsDownloadDropdownOpen(false); }}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
+                          >
+                            <FileImage className="w-3.5 h-3.5" /> Download Current Image
+                          </button>
+                          <button 
+                            onMouseDown={(e) => { e.preventDefault(); handleDownloadClick("all"); setIsDownloadDropdownOpen(false); }}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-brand hover:bg-[#f3f3f3] transition-colors w-full text-left"
+                          >
+                            <Download className="w-3.5 h-3.5" /> Download All Images
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -895,7 +957,7 @@ export default function ImageDetailPage({ params }: PageProps) {
               <div className="flex items-center justify-between mb-2 mt-4">
                 <div className="flex items-center gap-3 sm:gap-4">
                   {/* Profile Image */}
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xl flex-shrink-0 overflow-hidden shadow-sm">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg flex-shrink-0 overflow-hidden shadow-sm">
                     {creator.avatar_url ? (
                       <img src={creator.avatar_url} alt={creator.display_name} className="w-full h-full object-cover" />
                     ) : (
@@ -904,24 +966,14 @@ export default function ImageDetailPage({ params }: PageProps) {
                   </div>
                   
                   {/* Name & Badge */}
-                  <div className="flex flex-col gap-0.5">
-                    <Link href={`/creator/${creator.id}`} className="hover:opacity-80 transition-opacity">
-                      <h4 className="font-extrabold text-brand text-lg sm:text-[20px] leading-tight mb-1">
+                  <div className="flex flex-col justify-center">
+                    <Link href={`/creator/${creator.id}`} className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+                      <h4 className="font-extrabold text-brand text-base sm:text-[17px] leading-tight">
                         {creator.display_name}
                       </h4>
+                      <BadgeCheck className="w-4 h-4 sm:w-[18px] sm:h-[18px] shrink-0" fill="#2563eb" color="white" />
                     </Link>
-                    
-                    {/* Verified Badge */}
-                    <div className="inline-flex items-center rounded-md border border-[#52B774] overflow-hidden self-start">
-                      <div className="bg-[#52B774] pl-1.5 pr-1 py-0.5 flex items-center justify-center">
-                        <UserCheck className="w-3.5 h-3.5 text-white" />
-                      </div>
-                      <div className="bg-[#EAF6ED] pr-2 pl-1.5 py-0.5 flex items-center justify-center">
-                        <span className="text-[12px] font-medium text-[#52B774]">
-                          Verified
-                        </span>
-                      </div>
-                    </div>
+                    <span className="text-xs text-brand-faint font-medium mt-0.5">Educational Creator</span>
                   </div>
                 </div>
                 
@@ -930,10 +982,10 @@ export default function ImageDetailPage({ params }: PageProps) {
                   <button 
                     onClick={handleFollow}
                     disabled={isFollowLoading}
-                    className={`font-bold uppercase text-xs sm:text-sm px-5 sm:px-6 py-2 sm:py-2.5 rounded-xl transition-all shrink-0 tracking-wide border ${
+                    className={`font-bold uppercase text-[10px] sm:text-[11px] px-4 sm:px-5 py-1.5 sm:py-2 rounded-lg transition-all shrink-0 tracking-wide border ${
                       isFollowing 
                         ? "bg-brand/10 text-brand border-brand/20 hover:bg-brand/20" 
-                        : "bg-[#f0f2f5] hover:bg-[#e4e7eb] text-gray-400 hover:text-gray-600 border-gray-200"
+                        : "bg-brand text-white border-brand hover:bg-brand/90 shadow-sm hover:shadow-md hover:-translate-y-0.5"
                     } ${isFollowLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     {isFollowLoading ? "..." : isFollowing ? "FOLLOWING" : "FOLLOW"}
@@ -992,7 +1044,7 @@ export default function ImageDetailPage({ params }: PageProps) {
 
         {userState === "guest" && (
           <button 
-            onClick={() => handleDownloadClick("mobile-guest")}
+            onClick={() => handleDownloadClick("current")}
             className="flex items-center gap-1.5 bg-brand text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-sm"
           >
             <Lock className="w-3.5 h-3.5" />
@@ -1002,7 +1054,7 @@ export default function ImageDetailPage({ params }: PageProps) {
 
         {userState === "free" && (
           <button 
-            onClick={() => handleDownloadClick("mobile-free")}
+            onClick={() => handleDownloadClick("current")}
             className="flex items-center gap-1.5 bg-white border border-brand-border text-brand font-extrabold text-xs px-5 py-2.5 rounded-xl"
           >
             <Download className="w-3.5 h-3.5" />
@@ -1012,7 +1064,7 @@ export default function ImageDetailPage({ params }: PageProps) {
 
         {userState === "premium" && (
           <button 
-            onClick={() => handleDownloadClick("mobile-premium")}
+            onClick={() => handleDownloadClick("current")}
             className="flex items-center gap-1.5 bg-brand text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-sm"
           >
             <Crown className="w-3.5 h-3.5" />

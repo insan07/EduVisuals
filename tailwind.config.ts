@@ -46,7 +46,7 @@ const config: Config = {
         '2xl': '1536px',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-jakarta)', 'system-ui', 'sans-serif'],
       },
     },
   },

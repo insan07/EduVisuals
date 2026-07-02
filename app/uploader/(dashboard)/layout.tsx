@@ -67,14 +67,14 @@ export default function UploaderDashboardLayout({
         <div className="p-6 flex-1 flex flex-col">
           
           <Link href="/" className="flex items-center gap-2 group mb-8">
-            <div className="relative flex items-center justify-center w-8 h-8 transition-transform duration-300 group-hover:scale-110">
+            <div className="relative flex items-center justify-center w-7 h-7 transition-transform duration-300 group-hover:scale-110">
               <div
                 style={{
                   backgroundColor: "#073238",
-                  maskImage: "url('/logo.png?v=2')",
-                  WebkitMaskImage: "url('/logo.png?v=2')",
-                  maskSize: "180%",
-                  WebkitMaskSize: "180%",
+                  maskImage: "url('/logo.png?v=3')",
+                  WebkitMaskImage: "url('/logo.png?v=3')",
+                  maskSize: "100%",
+                  WebkitMaskSize: "100%",
                   maskRepeat: "no-repeat",
                   WebkitMaskRepeat: "no-repeat",
                   maskPosition: "center",

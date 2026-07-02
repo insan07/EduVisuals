@@ -129,7 +129,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-bold text-brand mb-3">Community Driven</h3>
               <p className="text-sm text-brand-muted leading-relaxed font-medium">
-                Visuals are uploaded, reviewed, and curated by top educators and subject matter experts to guarantee accuracy and quality.
+                A collaborative platform where students and educators can freely upload, share, and explore visual resources to support global learning.
               </p>
             </div>
           </div>
