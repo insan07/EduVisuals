@@ -8,7 +8,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useAuthModal } from "@/store/useAuthModal";
 import { useCollectionModal } from "@/store/useCollectionModal";
 import SearchBar from "@/components/SearchBar";
-import DiscoveryHub from "@/components/DiscoveryHub";
+import DiscoveryFeed from "@/components/DiscoveryFeed";
 import {
   Filter,
   ChevronDown,
@@ -513,9 +513,9 @@ function SearchResultsContent() {
           </div>
         )}
 
-        {/* ── Conditional Render: Discovery Hub vs Search Results ── */}
+        {/* ── Conditional Render: Discovery Feed vs Search Results ── */}
         {!isLoading && activeFilterCount === 0 && !q ? (
-          <DiscoveryHub />
+          <DiscoveryFeed savedIds={savedIds} onSave={toggleSave} onDownload={handleDownload} />
         ) : (
           <>
             {/* ── Empty State ── */}

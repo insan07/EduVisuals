@@ -41,7 +41,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl font-bold mb-3">6. Contact Us</h2>
-            <p className="text-brand-muted">If you have any questions about this Privacy Policy, please contact us at MOHAMEDINSAN07@GMAIL.COM.</p>
+            <p className="text-brand-muted">If you have any questions about this Privacy Policy, please contact us at info@learnpik.com.</p>
           </section>
         </div>
       </div>

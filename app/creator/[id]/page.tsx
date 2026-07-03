@@ -162,22 +162,29 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ id: s
     setIsFollowLoading(true);
     try {
       if (isFollowing) {
-        await supabase
+        const { error } = await supabase
           .from('follows')
           .delete()
           .eq('follower_id', currentUser.id)
           .eq('following_id', creatorId);
+          
+        if (error) throw error;
+        
         setIsFollowing(false);
         setFollowerCount(prev => Math.max(0, prev - 1));
       } else {
-        await supabase
+        const { error } = await supabase
           .from('follows')
           .insert({ follower_id: currentUser.id, following_id: creatorId });
+          
+        if (error) throw error;
+        
         setIsFollowing(true);
         setFollowerCount(prev => prev + 1);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert(e?.message || "Failed to follow creator. Please try again.");
     }
     setIsFollowLoading(false);
   };

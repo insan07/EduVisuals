@@ -57,7 +57,7 @@ export default function PricingPage() {
       </div>
 
       {/* 2. PRICING CARDS */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mb-20 select-none">
+      <div className="max-w-md mx-auto grid grid-cols-1 gap-8 lg:gap-12 relative z-10 px-4 select-none">
         
         {/* CARD 1: Free */}
         <div className="bg-white border border-brand-border rounded-3xl p-8 flex flex-col justify-between shadow-sm relative transition-transform hover:-translate-y-1 duration-300">
@@ -105,7 +105,7 @@ export default function PricingPage() {
         </div>
 
         {/* CARD 2: Student Premium (Featured) */}
-        <div className="bg-white border-2 border-brand rounded-3xl p-8 flex flex-col justify-between shadow-xl relative scale-100 lg:scale-[1.05] z-10 transition-transform hover:-translate-y-2 duration-300">
+        <div className="hidden bg-white border-2 border-brand rounded-3xl p-8 flex flex-col justify-between shadow-xl relative scale-100 lg:scale-[1.05] z-10 transition-transform hover:-translate-y-2 duration-300">
           <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 to-yellow-500 text-[#073238] text-[10px] font-black uppercase tracking-widest px-5 py-1.5 rounded-full shadow-md border border-yellow-300">
             Most Popular
           </div>
@@ -162,7 +162,7 @@ export default function PricingPage() {
         </div>
 
         {/* CARD 3: Institution/School */}
-        <div className="bg-white border border-brand-border rounded-3xl p-8 flex flex-col justify-between shadow-sm relative transition-transform hover:-translate-y-1 duration-300">
+        <div className="hidden bg-white border border-brand-border rounded-3xl p-8 flex flex-col justify-between shadow-sm relative transition-transform hover:-translate-y-1 duration-300">
           <div>
             <div className="flex justify-between items-center">
               <span className="text-[11px] font-black uppercase tracking-wider text-brand bg-gray-100 border border-brand-border px-3 py-1.5 rounded-full">

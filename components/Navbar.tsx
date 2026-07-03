@@ -228,26 +228,18 @@ export default function Navbar() {
                       <Info className="w-4 h-4 opacity-70" />
                       About Us
                     </Link>
-                    <Link
-                      href="/help"
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-black/5 hover:text-brand transition-colors"
-                    >
-                      <HelpCircle className="w-4 h-4 opacity-70" />
-                      Get Help
-                    </Link>
+
                   </div>
                 )}
               </div>
 
-              <Link href="/pricing" className="px-4 py-2 rounded-full hover:bg-black/5 hover:text-brand transition-all">Pricing</Link>
+              <Link href="/pricing" className="hidden px-4 py-2 rounded-full hover:bg-black/5 hover:text-brand transition-all">Pricing</Link>
               {user ? (
                 <Link href="/uploader" className="text-sm font-semibold text-white bg-brand hover:bg-brand/90 transition-all flex items-center gap-1.5 ml-4 px-4 py-2 rounded-full shadow-sm hover:shadow-md hover:-translate-y-0.5">
-                  <UploadIcon className="w-4 h-4" /> Upload
+                  <UploadIcon className="w-4 h-4" /> Creator Portal
                 </Link>
               ) : (
-                <button onClick={() => useAuthModal.getState().open("signup")} className="text-sm font-semibold text-white bg-brand hover:bg-brand/90 transition-all flex items-center gap-1.5 ml-4 px-4 py-2 rounded-full shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
-                  <UploadIcon className="w-4 h-4" /> Upload
-                </button>
+                <button onClick={() => useAuthModal.getState().open("signup")} className="px-4 py-2 rounded-full text-sm font-bold text-[#073238] hover:bg-black/5 transition-all">Become a Creator</button>
               )}
             </div>
           </div>
@@ -425,14 +417,7 @@ export default function Navbar() {
                       <Info className="w-4 h-4 text-[rgba(0,57,60,0.5)]" />
                       About Us
                     </Link>
-                    <Link
-                      href="/help"
-                      onClick={toggleMenu}
-                      className="flex items-center gap-2.5 text-sm font-bold text-[rgba(0,57,60,0.7)] hover:text-brand transition-colors py-0.5"
-                    >
-                      <HelpCircle className="w-4 h-4 text-[rgba(0,57,60,0.5)]" />
-                      Get Help
-                    </Link>
+
                   </div>
                 )}
               </div>
@@ -440,7 +425,7 @@ export default function Navbar() {
               <Link
                 href="/pricing"
                 onClick={toggleMenu}
-                className="text-[rgba(0,57,60,0.85)] text-base font-extrabold hover:text-brand transition-colors"
+                className="hidden text-[rgba(0,57,60,0.85)] text-base font-extrabold hover:text-brand transition-colors"
               >
                 Pricing
               </Link>
@@ -450,7 +435,7 @@ export default function Navbar() {
                   onClick={toggleMenu}
                   className="flex items-center gap-1.5 text-[rgba(0,57,60,0.85)] text-base font-extrabold hover:text-brand transition-colors"
                 >
-                  <UploadIcon className="w-4 h-4" /> Upload Visual
+                  <UploadIcon className="w-4 h-4" /> Creator Portal
                 </Link>
               ) : (
                 <button
@@ -458,9 +443,9 @@ export default function Navbar() {
                     toggleMenu();
                     useAuthModal.getState().open("signup");
                   }}
-                  className="flex items-center gap-1.5 text-[rgba(0,57,60,0.85)] text-base font-extrabold hover:text-brand transition-colors text-left"
+                  className="text-[#073238] text-base font-extrabold hover:text-brand transition-colors text-left"
                 >
-                  <UploadIcon className="w-4 h-4" /> Upload Visual
+                  Become a Creator
                 </button>
               )}
             </nav>

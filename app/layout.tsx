@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import AuthModal from "@/components/AuthModal";
 import CollectionModal from "@/components/CollectionModal";
 import Toast from "@/components/Toast";
+import GoogleAuthProvider from "@/components/GoogleAuthProvider";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import "./globals.css";
 
@@ -54,12 +55,14 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${jakarta.variable} scroll-smooth`}>
       <body className="min-h-screen bg-brand-surface text-brand flex flex-col font-sans antialiased pt-14 md:pt-16">
-        <Navbar />
-        <AuthModal />
-        <CollectionModal />
-        <Toast />
-        <main className="flex-1 flex flex-col w-full">{children}</main>
-        <Footer />
+        <GoogleAuthProvider>
+          <Navbar />
+          <AuthModal />
+          <CollectionModal />
+          <Toast />
+          <main className="flex-1 flex flex-col w-full">{children}</main>
+          <Footer />
+        </GoogleAuthProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `

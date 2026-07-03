@@ -273,24 +273,31 @@ export default function ImageDetailPage({ params }: PageProps) {
     try {
       if (isFollowing) {
         // Unfollow
-        await supabase
+        const { error } = await supabase
           .from("follows")
           .delete()
           .eq("follower_id", currentUser.id)
           .eq("following_id", creator.id);
+          
+        if (error) throw error;
+        
         setIsFollowing(false);
       } else {
         // Follow
-        await supabase
+        const { error } = await supabase
           .from("follows")
           .insert({
             follower_id: currentUser.id,
             following_id: creator.id
           });
+          
+        if (error) throw error;
+        
         setIsFollowing(true);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error toggling follow", err);
+      alert(err?.message || "Failed to follow creator. Please try again.");
     } finally {
       setIsFollowLoading(false);
     }
@@ -1148,7 +1155,7 @@ export default function ImageDetailPage({ params }: PageProps) {
                 disabled={!reportReason}
                 onClick={() => {
                   const body = `Reason: ${reportReason}\n\nDetails:\n${reportDetails}\n\n---\nImage ID: ${visual.id}\nTitle: ${visual.title}`;
-                  window.location.href = `mailto:MOHAMEDINSAN07@GMAIL.COM?subject=Report Issue: ${visual.title}&body=${encodeURIComponent(body)}`;
+                  window.location.href = `mailto:info@learnpik.com?subject=Report Issue: ${visual.title}&body=${encodeURIComponent(body)}`;
                   setIsReportModalOpen(false);
                   setReportReason("");
                   setReportDetails("");
