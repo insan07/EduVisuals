@@ -42,18 +42,45 @@ export default function DiscoveryHub() {
         console.error("Error loading recently seen", e);
       }
 
-      // 2. Fetch Suggestions (Random or Latest)
-      const { data: suggImages } = await supabase
-        .from("images")
-        .select("*, image_tags(*)")
-        .eq("is_published", true)
-        .eq("status", "approved")
-        .order("created_at", { ascending: false })
-        .limit(8);
-      if (suggImages) setSuggestions(suggImages);
+      // 2. Fetch Suggestions (From creators user follows)
+      let suggImages: any[] = [];
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        const { data: follows } = await supabase
+          .from("follows")
+          .select("creator_id")
+          .eq("follower_id", session.user.id);
+          
+        if (follows && follows.length > 0) {
+          const creatorIds = follows.map(f => f.creator_id);
+          const { data } = await supabase
+            .from("images")
+            .select("*, image_tags(*)")
+            .in("uploaded_by", creatorIds)
+            .eq("status", "approved")
+            .eq("is_published", true)
+            .order("created_at", { ascending: false })
+            .limit(10);
+          if (data) suggImages = data;
+        }
+      }
+      
+      // Fallback if not logged in or no following visuals
+      if (suggImages.length === 0) {
+        const { data } = await supabase
+          .from("images")
+          .select("*, image_tags(*)")
+          .eq("is_published", true)
+          .eq("status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(8);
+        if (data) suggImages = data;
+      }
+      
+      setSuggestions(suggImages);
 
       // 3. Fetch Collections for the logged-in user
-      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const { data: userCollections } = await supabase
           .from("saved_collections")
@@ -163,6 +190,34 @@ export default function DiscoveryHub() {
           </div>
         </section>
       )}
+
+      {/* POPULAR COLLECTIONS */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg md:text-xl font-bold text-[#00393c] flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e8f5f6] to-[#d0ecee] flex items-center justify-center shadow-sm border border-[#073238]/10">
+              <Folder className="w-4 h-4 text-[#073238]" />
+            </div>
+            Popular Collections
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { id: 1, title: "Biology Mind Maps", count: "1,240 Visuals", image: "/mindmap.png", link: "/visuals?q=biology" },
+            { id: 2, title: "Kids Worksheets", count: "850 Visuals", image: "/kids.png", link: "/visuals?q=kids" },
+            { id: 3, title: "Physics Cheat Sheets", count: "420 Visuals", image: "/cheatsheet.png", link: "/visuals?q=physics" },
+          ].map(col => (
+            <Link href={col.link} key={col.id} className="group relative h-40 w-full rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 block border border-gray-200">
+              <img src={col.image} alt={col.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700 ease-out" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent transition-opacity duration-300 group-hover:opacity-90"></div>
+              <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col items-start justify-end z-10">
+                <span className="text-[10px] font-bold text-white uppercase tracking-wider mb-1 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 shadow-sm">{col.count}</span>
+                <h3 className="text-lg font-bold text-white tracking-tight">{col.title}</h3>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* YOUR COLLECTIONS */}
       {collections.length > 0 && (

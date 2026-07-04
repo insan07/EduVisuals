@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import heroBg from "../public/hero_bg.png";
 import { useRouter } from "next/navigation";
 import { useAuthModal } from "@/store/useAuthModal";
 import { useAuth } from "@/hooks/useAuth";
 import SearchBar from "@/components/SearchBar";
 import {
   ArrowRight,
-  Sparkles,
   Zap,
   ShieldCheck,
   Users,
@@ -46,288 +44,241 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen bg-brand-surface text-brand font-sans selection:bg-brand selection:text-white">
-      
-      {/* 1. HERO SECTION */}
-      <section className="relative pt-24 pb-20 md:pt-36 md:pb-32 px-4 overflow-hidden flex flex-col items-center text-center min-h-[90vh] justify-center">
-        {/* Background Image & Dynamic Overlays */}
-        <div className="absolute inset-0 z-0">
-          <Image 
-            src={heroBg} 
-            alt="Educational Visuals Background" 
-            fill 
-            priority 
-            className="object-cover object-center scale-105" 
-          />
-        </div>
-        <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#073238]/90 via-[#073238]/70 to-[#073238]/95" />
-        <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-400/20 via-transparent to-transparent opacity-60 mix-blend-screen" />
-        <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-emerald-500/20 via-transparent to-transparent opacity-60 mix-blend-screen" />
+    <div className="flex flex-col min-h-screen bg-brand-surface text-brand font-sans">
 
-        {/* Content */}
-        <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col items-center">
+      {/* 1. HERO SECTION (Split Layout) */}
+      <section className="relative pt-20 pb-8 md:pt-18 md:pb-12 px-4 lg:px-12 max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center min-h-[85vh] overflow-hidden lg:overflow-visible">
+
+        {/* Left Side: Content */}
+        <div className="flex flex-col items-start text-left relative z-20 lg:pr-8 lg:pl-10">
           
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-8 text-xs font-black uppercase tracking-widest text-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.3)] animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <Sparkles className="w-4 h-4" />
-            <span>The Premier Educational Visual Library</span>
-          </div>
-
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter mb-6 leading-[1.05] animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100 drop-shadow-2xl text-white">
-            Master Complex Concepts with <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-emerald-300 filter drop-shadow-[0_0_10px_rgba(52,211,153,0.4)]">
-              Visual Learning
-            </span>
+          <h1 className="text-3xl md:text-4xl lg:text-[3.25rem] font-black tracking-tight mb-8 leading-[1.05] text-[#111827]">
+            Master concepts <br className="hidden md:block" />
+            <span className="inline-block lg:whitespace-nowrap">faster with <ChangingText /></span>
           </h1>
 
-          <p className="text-base md:text-xl text-white/80 max-w-2xl mb-12 font-medium leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 drop-shadow-md">
-            Access world-class diagrams, mind maps, and illustrations engineered for all major international syllabuses. Accelerate your memory retention today.
+          <p className="text-base md:text-lg text-gray-600 max-w-lg mb-10 font-medium leading-relaxed">
+            Access world-class diagrams, worksheets, mind maps, and illustrations engineered for all major international syllabuses. Accelerate your memory retention today.
           </p>
 
-          {/* Hero Search - Glassmorphism Wrapper */}
-          <div className="w-full max-w-3xl mb-12 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300 relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-[2rem] blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
-            <div className="relative bg-black/40 backdrop-blur-2xl p-2 rounded-[2rem] border border-white/10 shadow-2xl">
-              <SearchBar darkHero={true} />
+          {/* Premium Search Bar */}
+          <div className="w-full max-w-xl mb-6 bg-white p-2 rounded-full border border-gray-200 shadow-md flex items-center transition-all hover:shadow-lg">
+            <div className="flex-1 w-full">
+              <SearchBar darkHero={false} />
             </div>
           </div>
 
-          {/* CTAs & Trust Badges */}
-          <div className="flex flex-col sm:flex-row items-center gap-6 animate-in fade-in slide-in-from-bottom-12 duration-700 delay-500">
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
             <Link
               href="/visuals"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl font-black text-brand bg-white hover:bg-gray-100 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center gap-2 group"
+              className="w-full sm:w-auto px-8 py-4 rounded-full font-bold text-white bg-[#0f172a] hover:bg-black transition-colors flex items-center justify-center gap-3 shadow-lg"
             >
-              Explore Library
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <Zap className="w-5 h-5 fill-white text-white" />
+              Start Exploring Now
             </Link>
-            {!user && (
-              <button
-                onClick={() => openAuth("signup", "Join Learnpik for Free", () => router.push("/visuals"))}
-                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold flex items-center justify-center gap-2 hover:bg-white/20 transition-all shadow-sm active:scale-95 hover:border-white/40"
-              >
-                Create Free Account
-              </button>
-            )}
           </div>
-          
-          <div className="mt-12 flex items-center gap-6 text-xs font-bold text-white/60 animate-in fade-in duration-1000 delay-700">
-            <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Free Forever Core</div>
-            <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Curriculum Aligned</div>
-            <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> High-Resolution</div>
+        </div>
+
+        {/* Right Side: Shuffled Image Grid (3 Images) */}
+        <div className="relative w-full h-[300px] sm:h-[400px] lg:h-[500px] flex items-center justify-center z-10 scale-95 lg:scale-90 mt-4 lg:mt-0">
+          {/* Main Mindmap */}
+          <div className="absolute top-[5%] right-[15%] w-[50%] h-[50%] rounded-3xl overflow-hidden shadow-2xl border-[6px] border-white rotate-6 hover:rotate-0 hover:scale-105 hover:z-50 transition-all duration-500 z-50">
+            <Image src="/mindmap.png" alt="Educational Mindmap" fill className="object-cover" priority />
+          </div>
+          {/* Kids Worksheet */}
+          <div className="absolute bottom-[5%] left-[5%] w-[55%] h-[60%] rounded-3xl overflow-hidden shadow-2xl border-[6px] border-white -rotate-6 hover:rotate-0 hover:scale-105 hover:z-50 transition-all duration-500 z-40">
+            <Image src="/kids.png" alt="Kids Worksheet" fill className="object-cover" />
+          </div>
+          {/* Cheatsheet */}
+          <div className="absolute top-[30%] right-[-5%] w-[45%] h-[45%] rounded-3xl overflow-hidden shadow-xl border-[6px] border-white rotate-12 hover:rotate-0 hover:scale-105 hover:z-50 transition-all duration-500 z-30">
+             <Image src="/cheatsheet.png" alt="Physics Cheat Sheet" fill className="object-cover" />
+          </div>
+        </div>
+      </section>
+
+      {/* POPULAR COLLECTIONS */}
+      <section className="py-24 px-4 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-12">
+            <h2 className="text-3xl md:text-4xl font-black text-brand mb-4 tracking-tight">Explore Popular Collections</h2>
+            <p className="text-gray-500 font-medium max-w-xl text-lg">
+              Discover our most downloaded premium resource packs, curated specifically for top-performing students and educators.
+            </p>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { id: 1, title: "Biology Mind Maps", count: "1,240 Visuals", image: "/mindmap.png", link: "/visuals?q=biology" },
+              { id: 2, title: "Kids Worksheets", count: "850 Visuals", image: "/kids.png", link: "/visuals?q=kids" },
+              { id: 3, title: "Physics Cheat Sheets", count: "420 Visuals", image: "/cheatsheet.png", link: "/visuals?q=physics" },
+              { id: 4, title: "Astronomy Illustrations", count: "315 Visuals", image: "/illustration.png", link: "/visuals?q=astronomy" },
+              { id: 5, title: "Medical & Anatomy", count: "930 Visuals", image: "/diagram.png", link: "/visuals?q=anatomy" },
+              { id: 6, title: "Revision Flashcards", count: "1,500 Visuals", image: "/flashcard.png", link: "/visuals?q=flashcard" },
+            ].map(col => (
+              <Link href={col.link} key={col.id} className="group relative h-64 md:h-[320px] w-full rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 block border border-gray-200">
+                <Image src={col.image} alt={col.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent transition-opacity duration-300 group-hover:opacity-90"></div>
+                <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col items-start justify-end z-10">
+                  <span className="text-[10px] sm:text-xs font-bold text-white uppercase tracking-wider mb-2 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-sm">{col.count}</span>
+                  <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">{col.title}</h3>
+                </div>
+              </Link>
+            ))}
+          </div>
+          
+          <div className="mt-12 flex justify-center">
+             <Link href="/visuals" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-4 rounded-full border border-gray-200 text-brand font-bold bg-white shadow-sm hover:shadow-md hover:border-gray-300 transition-all">
+                Explore More Collections <ArrowRight className="w-5 h-5" />
+             </Link>
+          </div>
         </div>
       </section>
 
       {/* 2. STATS BAR */}
-      <section className="bg-white border-b border-brand/5 py-8 relative z-20 -mt-6 mx-4 md:mx-12 rounded-3xl shadow-xl flex flex-col md:flex-row justify-around items-center gap-8 px-8">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center text-teal-600">
-            <LibraryBig className="w-6 h-6" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-2xl font-black text-brand">10,000+</span>
+      <section className="bg-white border-y border-brand-border py-12 relative z-20">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-8 md:gap-0 divide-y md:divide-y-0 md:divide-x divide-brand-border">
+
+          <div className="flex flex-col items-center text-center px-8 w-full">
+            <LibraryBig className="w-8 h-8 text-brand mb-3" />
+            <span className="text-3xl font-black text-brand mb-1">10,000+</span>
             <span className="text-xs font-bold text-brand-muted uppercase tracking-wider">Educational Visuals</span>
           </div>
-        </div>
-        <div className="hidden md:block w-px h-12 bg-brand/10" />
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
-            <Globe2 className="w-6 h-6" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-2xl font-black text-brand">15+</span>
+
+          <div className="flex flex-col items-center text-center px-8 pt-8 md:pt-0 w-full">
+            <Globe2 className="w-8 h-8 text-brand mb-3" />
+            <span className="text-3xl font-black text-brand mb-1">15+</span>
             <span className="text-xs font-bold text-brand-muted uppercase tracking-wider">International Syllabuses</span>
           </div>
-        </div>
-        <div className="hidden md:block w-px h-12 bg-brand/10" />
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center text-sky-600">
-            <BrainCircuit className="w-6 h-6" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-2xl font-black text-brand">60,000x</span>
+
+          <div className="flex flex-col items-center text-center px-8 pt-8 md:pt-0 w-full">
+            <BrainCircuit className="w-8 h-8 text-brand mb-3" />
+            <span className="text-3xl font-black text-brand mb-1">60,000x</span>
             <span className="text-xs font-bold text-brand-muted uppercase tracking-wider">Faster Processing</span>
           </div>
+
         </div>
       </section>
 
-      {/* 3. BENTO GRID: WHY LEARNPIK */}
-      <section className="py-24 px-4 bg-brand-surface relative overflow-hidden">
-        {/* Subtle decorative background */}
-        <div className="absolute top-40 right-[-10%] w-96 h-96 bg-teal-400/5 rounded-full blur-[100px] pointer-events-none" />
-        
+      {/* 3. WHY LEARNPIK (Features) */}
+      <section className="py-24 px-4 bg-brand-surface">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black text-brand mb-6 tracking-tight">The ultimate learning edge.</h2>
+            <h2 className="text-3xl md:text-4xl font-black text-brand mb-4 tracking-tight">The ultimate learning edge.</h2>
             <p className="text-brand-muted font-medium max-w-2xl mx-auto text-lg">
-              We engineer scientifically accurate visual aids designed specifically to align with local and international educational standards.
+              Scientifically accurate visual aids designed specifically to align with local and international educational standards.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            
-            {/* Bento Box 1: Large */}
-            <div className="md:col-span-2 bg-white rounded-[2rem] p-8 md:p-12 border border-brand/5 shadow-sm hover:shadow-xl transition-all duration-300 group relative overflow-hidden">
-              <div className="absolute right-0 bottom-0 opacity-5 group-hover:opacity-10 transition-opacity duration-500 translate-x-1/4 translate-y-1/4">
-                <Zap className="w-96 h-96 text-brand" />
-              </div>
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-8 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Zap className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-3xl font-black text-brand mb-4">Learn 60,000x Faster</h3>
-                <p className="text-lg text-brand-muted font-medium max-w-md leading-relaxed">
-                  The human brain processes visual information significantly faster than text. Cut down your revision time, improve memory retention, and ace your exams with precision diagrams.
-                </p>
-              </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white rounded-2xl p-8 border border-brand-border flex flex-col">
+              <Zap className="w-8 h-8 text-brand mb-6" />
+              <h3 className="text-xl font-bold text-brand mb-3">Learn 60,000x Faster</h3>
+              <p className="text-sm text-brand-muted leading-relaxed">
+                The human brain processes visual information significantly faster than text. Cut down revision time and improve memory retention with precision diagrams.
+              </p>
             </div>
 
-            {/* Bento Box 2 */}
-            <div className="bg-white rounded-[2rem] p-8 md:p-12 border border-brand/5 shadow-sm hover:shadow-xl transition-all duration-300 group">
-              <div className="w-14 h-14 bg-brand/5 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
-                <ShieldCheck className="w-7 h-7 text-brand" />
-              </div>
-              <h3 className="text-2xl font-black text-brand mb-4">Curriculum Aligned</h3>
-              <p className="text-base text-brand-muted font-medium leading-relaxed">
+            <div className="bg-white rounded-2xl p-8 border border-brand-border flex flex-col">
+              <ShieldCheck className="w-8 h-8 text-brand mb-6" />
+              <h3 className="text-xl font-bold text-brand mb-3">Curriculum Aligned</h3>
+              <p className="text-sm text-brand-muted leading-relaxed">
                 Every visual is precisely categorized by grade and syllabus framework, ensuring you study exactly what you need.
               </p>
             </div>
 
-            {/* Bento Box 3 */}
-            <div className="bg-white rounded-[2rem] p-8 md:p-12 border border-brand/5 shadow-sm hover:shadow-xl transition-all duration-300 group">
-              <div className="w-14 h-14 bg-brand/5 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
-                <Users className="w-7 h-7 text-brand" />
-              </div>
-              <h3 className="text-2xl font-black text-brand mb-4">Community Driven</h3>
-              <p className="text-base text-brand-muted font-medium leading-relaxed">
+            <div className="bg-white rounded-2xl p-8 border border-brand-border flex flex-col">
+              <Users className="w-8 h-8 text-brand mb-6" />
+              <h3 className="text-xl font-bold text-brand mb-3">Community Driven</h3>
+              <p className="text-sm text-brand-muted leading-relaxed">
                 A collaborative hub where students and elite educators share high-quality visual resources.
               </p>
             </div>
-
-            {/* Bento Box 4: Large */}
-            <div className="md:col-span-2 bg-[#073238] rounded-[2rem] p-8 md:p-12 shadow-2xl group relative overflow-hidden text-white">
-               <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-               <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 justify-between h-full">
-                 <div>
-                   <div className="w-16 h-16 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
-                     <Sparkles className="w-8 h-8 text-emerald-300" />
-                   </div>
-                   <h3 className="text-3xl font-black mb-4">Premium Quality Guaranteed</h3>
-                   <p className="text-lg text-white/70 font-medium max-w-md leading-relaxed">
-                     Our strict moderation queue ensures every diagram, illustration, and mind map meets rigorous academic standards before publication.
-                   </p>
-                 </div>
-                 <div className="hidden md:flex items-center justify-center p-6 bg-white/5 rounded-3xl backdrop-blur-sm border border-white/10">
-                    {/* Abstract UI representation of quality */}
-                    <div className="flex flex-col gap-3 w-48">
-                      <div className="h-4 bg-white/20 rounded-full w-full animate-pulse" />
-                      <div className="h-4 bg-emerald-400/50 rounded-full w-3/4" />
-                      <div className="h-4 bg-white/20 rounded-full w-5/6" />
-                      <div className="mt-4 flex items-center justify-center gap-1 bg-emerald-500 text-white text-xs font-bold py-1.5 rounded-full">
-                        <CheckCircle2 className="w-3 h-3" /> Approved
-                      </div>
-                    </div>
-                 </div>
-               </div>
-            </div>
-
           </div>
         </div>
       </section>
 
       {/* 4. WHO IS IT FOR */}
-      <section className="py-24 px-4 bg-white relative">
+      <section className="py-24 px-4 bg-white border-y border-brand-border">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black text-brand mb-6 tracking-tight">Built for modern education.</h2>
+            <h2 className="text-3xl md:text-4xl font-black text-brand mb-4 tracking-tight">Built for modern education.</h2>
             <p className="text-brand-muted font-medium max-w-2xl mx-auto text-lg">
               Empowering every tier of the educational ecosystem.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-brand-surface p-10 rounded-[2rem] border border-brand/5 hover:-translate-y-2 transition-transform duration-300 group">
-              <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-8 group-hover:bg-brand group-hover:text-white text-brand transition-colors duration-300">
+            <div className="flex flex-col items-center text-center px-6">
+              <div className="w-16 h-16 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center mb-6 text-brand">
                 <GraduationCap className="w-8 h-8" />
               </div>
-              <h4 className="font-black text-brand text-2xl mb-4">Students</h4>
-              <p className="text-base text-brand-muted font-medium leading-relaxed">
-                Download high-resolution mind maps and cheat sheets to turbocharge your exam preparations and simplify late-night study sessions.
+              <h4 className="font-bold text-brand text-xl mb-3">Students</h4>
+              <p className="text-sm text-brand-muted leading-relaxed">
+                Download high-resolution mind maps and cheat sheets to turbocharge your exam preparations.
               </p>
             </div>
 
-            <div className="bg-brand-surface p-10 rounded-[2rem] border border-brand/5 hover:-translate-y-2 transition-transform duration-300 group">
-              <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-8 group-hover:bg-brand group-hover:text-white text-brand transition-colors duration-300">
+            <div className="flex flex-col items-center text-center px-6">
+              <div className="w-16 h-16 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center mb-6 text-brand">
                 <BookOpen className="w-8 h-8" />
               </div>
-              <h4 className="font-black text-brand text-2xl mb-4">Educators</h4>
-              <p className="text-base text-brand-muted font-medium leading-relaxed">
-                Enhance your presentations, handouts, and smart-board lessons with professional educational assets that keep students engaged.
+              <h4 className="font-bold text-brand text-xl mb-3">Educators</h4>
+              <p className="text-sm text-brand-muted leading-relaxed">
+                Enhance presentations and handouts with professional assets that keep students engaged.
               </p>
             </div>
 
-            <div className="bg-brand-surface p-10 rounded-[2rem] border border-brand/5 hover:-translate-y-2 transition-transform duration-300 group">
-              <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-8 group-hover:bg-brand group-hover:text-white text-brand transition-colors duration-300">
+            <div className="flex flex-col items-center text-center px-6">
+              <div className="w-16 h-16 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center mb-6 text-brand">
                 <Building className="w-8 h-8" />
               </div>
-              <h4 className="font-black text-brand text-2xl mb-4">Institutions</h4>
-              <p className="text-base text-brand-muted font-medium leading-relaxed">
-                Provide premium visual libraries to your entire student base with our upcoming volume licensing and integration options.
+              <h4 className="font-bold text-brand text-xl mb-3">Institutions</h4>
+              <p className="text-sm text-brand-muted leading-relaxed">
+                Provide premium visual libraries to your entire student base with volume licensing.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5. PRICING TEASER (Hidden as requested) */}
-      <section className="hidden py-24 px-4 bg-white border-y border-brand-border text-center relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-brand/5 blur-3xl rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-500/5 blur-3xl rounded-full pointer-events-none" />
-
-        <div className="max-w-3xl mx-auto relative z-10">
-          <span className="inline-block px-3 py-1 rounded bg-[#f3f3f3] text-brand font-black text-[10px] uppercase tracking-wider mb-4 border border-brand-border">
-            Transparent Pricing
-          </span>
-          <h2 className="text-3xl md:text-5xl font-extrabold text-brand mb-6">
-            Free forever. Premium when you need it.
+      {/* 5. FOOTER CTA */}
+      <section className="py-24 px-4 bg-brand text-center">
+        <div className="max-w-3xl mx-auto flex flex-col items-center">
+          <h2 className="text-3xl md:text-5xl font-black mb-6 text-white tracking-tight">
+            Ready to elevate your learning?
           </h2>
-          <p className="text-sm md:text-base text-brand-muted font-medium mb-8 leading-relaxed">
-            Thousands of standard curriculum visuals are completely free. For advanced university-level diagrams and exclusive high-res bundles, unlock Premium for a flat, affordable rate.
-          </p>
-          <Link
-            href="/pricing"
-            className="inline-flex items-center justify-center gap-2 text-sm font-extrabold text-brand hover:text-brand uppercase tracking-wide hover:underline underline-offset-4 transition-all"
-          >
-            View Pricing Plans
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </section>
-
-      {/* 6. FOOTER CTA */}
-      <section className="py-24 px-4 bg-gradient-to-b from-[#073238] to-[#041a1d] text-center relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-teal-500/20 blur-[120px] rounded-full pointer-events-none" />
-        
-        <div className="max-w-3xl mx-auto relative z-10 flex flex-col items-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 text-xs font-bold text-white/80">
-            <Sparkles className="w-4 h-4 text-emerald-400" /> Start your journey
-          </div>
-          <h2 className="text-4xl md:text-6xl font-black mb-6 text-white tracking-tight leading-tight">
-            Ready to elevate your <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-emerald-300">learning?</span>
-          </h2>
-          <p className="text-white/70 font-medium mb-12 text-lg md:text-xl max-w-xl leading-relaxed">
+          <p className="text-brand-surface/80 font-medium mb-10 text-lg max-w-xl leading-relaxed">
             Join thousands of global students using Learnpik to study smarter, not harder.
           </p>
           <Link
             href="/visuals"
-            className="inline-flex items-center justify-center gap-3 px-10 py-5 rounded-2xl bg-white text-[#073238] font-black hover:bg-gray-100 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] active:scale-95 group text-lg"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-brand font-bold hover:bg-gray-100 transition-colors"
           >
             Start Exploring Now
-            <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-5 h-5" />
           </Link>
         </div>
       </section>
     </div>
+  );
+}
+
+const changingWords = ["Mind Maps", "Cheat Sheets", "Worksheets", "Diagrams"];
+
+function ChangingText() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % changingWords.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span className="text-teal-500">
+      {changingWords[index]}
+    </span>
   );
 }

@@ -127,17 +127,35 @@ export default function Navbar() {
     router.push("/");
   }
 
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY > 10) {
         setIsScrolled(true);
       } else {
         setIsScrolled(false);
       }
+
+      // Hide navbar when scrolling down, show when scrolling up
+      if (currentScrollY > lastScrollY && currentScrollY > 80) {
+        setIsVisible(false);
+        setMobileSearchOpen(false); // Close mobile search when scrolling down
+        setShowProfileDropdown(false);
+        setShowResourcesDropdown(false);
+      } else {
+        setIsVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
     };
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [lastScrollY]);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -149,6 +167,16 @@ export default function Navbar() {
     }
   };
 
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const input = form.elements.namedItem('q') as HTMLInputElement;
+    if (input.value.trim()) {
+      router.push(`/visuals?q=${encodeURIComponent(input.value.trim())}`);
+      setMobileSearchOpen(false);
+    }
+  };
+
   if (pathname.startsWith("/uploader")) {
     return null;
   }
@@ -157,9 +185,9 @@ export default function Navbar() {
     <>
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-            ? "bg-white/80 backdrop-blur-xl border-b border-brand/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+            ? "bg-white/90 backdrop-blur-xl border-b border-brand/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
             : "bg-white border-b border-brand/5"
-          } ${isDashboard ? "hidden md:block" : ""}`}
+          } ${isVisible ? "translate-y-0" : "-translate-y-full"} ${isDashboard ? "hidden md:block" : ""}`}
       >
         {/* Height: 64px desktop (h-16), 56px mobile (h-14) */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 md:h-16 flex items-center justify-between">
@@ -244,10 +272,31 @@ export default function Navbar() {
             </div>
           </div>
 
-
+          {/* Desktop Search Bar */}
+          <div className="hidden lg:flex items-center flex-1 max-w-sm mx-8">
+            <form onSubmit={handleSearchSubmit} className="relative w-full group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand/50 group-focus-within:text-brand transition-colors" />
+              <input 
+                name="q"
+                type="text" 
+                placeholder="Search visuals, worksheets..." 
+                className="w-full bg-black/5 hover:bg-black/10 focus:bg-white border border-transparent focus:border-brand/20 rounded-full py-1.5 pl-9 pr-4 text-sm outline-none transition-all text-brand font-medium placeholder:font-normal placeholder:text-brand/50"
+              />
+            </form>
+          </div>
 
           {/* Right: Actions */}
           <div className="flex items-center gap-3">
+            {/* Mobile Search Toggle */}
+            <button 
+              onClick={() => {
+                setMobileSearchOpen(!mobileSearchOpen);
+                if (isOpen) setIsOpen(false); // Close menu if open
+              }}
+              className="lg:hidden p-2 text-brand/70 hover:text-brand hover:bg-[#f3f3f3] rounded-full transition-all cursor-pointer"
+            >
+              <Search className="w-5 h-5" />
+            </button>
 
 
 
@@ -366,6 +415,19 @@ export default function Navbar() {
 
 
       </nav>
+
+      {/* Mobile Search Bar Dropdown */}
+      <div className={`fixed top-14 md:top-16 left-0 right-0 bg-white border-b border-brand/10 p-3 z-40 transition-all duration-300 lg:hidden shadow-[0_8px_30px_rgb(0,0,0,0.08)] ${mobileSearchOpen && isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}>
+        <form onSubmit={handleSearchSubmit} className="relative w-full max-w-md mx-auto">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand/50" />
+          <input 
+            name="q"
+            type="text" 
+            placeholder="Search visuals..." 
+            className="w-full bg-black/5 focus:bg-white border border-brand/10 focus:border-brand/20 rounded-full py-2 pl-9 pr-4 text-sm outline-none transition-all text-brand font-medium placeholder:font-normal"
+          />
+        </form>
+      </div>
 
       {/* Mobile Menu Overlay */}
       {isOpen && (

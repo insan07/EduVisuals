@@ -8,7 +8,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useAuthModal } from "@/store/useAuthModal";
 import { useCollectionModal } from "@/store/useCollectionModal";
 import SearchBar from "@/components/SearchBar";
-import DiscoveryFeed from "@/components/DiscoveryFeed";
+import DiscoveryHub from "@/components/DiscoveryHub";
 import {
   Filter,
   ChevronDown,
@@ -89,7 +89,7 @@ function SearchResultsContent() {
   
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  const [suggestedVisuals, setSuggestedVisuals] = useState<Visual[]>([]);
+
 
   /* ── Fetch user session data ── */
   useEffect(() => {
@@ -107,40 +107,6 @@ function SearchResultsContent() {
           .then(({ data: profile }) => {
             if (profile?.role) setUserRole(profile.role);
           });
-
-        // Fetch followed creator visuals for suggestions
-        const fetchFollowingVisuals = async () => {
-          const { data: follows } = await supabase
-            .from("follows")
-            .select("creator_id")
-            .eq("follower_id", userId);
-            
-          if (follows && follows.length > 0) {
-            const creatorIds = follows.map(f => f.creator_id);
-            const { data: recentVisuals } = await supabase
-              .from("images")
-              .select("*, image_tags(*)")
-              .in("uploaded_by", creatorIds)
-              .eq("status", "approved")
-              .eq("is_published", true)
-              .order("created_at", { ascending: false })
-              .limit(10);
-              
-            if (recentVisuals && recentVisuals.length > 0) {
-              const mapped = recentVisuals.map((img: any) => {
-                const tags = img.image_tags || [];
-                return {
-                  ...img,
-                  subject: tags.find((t: any) => t.tag_type === "subject")?.tag || "General",
-                  grade: tags.find((t: any) => t.tag_type === "grade")?.tag || "General",
-                  type: tags.find((t: any) => t.tag_type === "type")?.tag || "Diagram",
-                };
-              });
-              setSuggestedVisuals(mapped);
-            }
-          }
-        };
-        fetchFollowingVisuals();
       }
     });
   }, []);
@@ -263,9 +229,11 @@ function SearchResultsContent() {
   };
 
   /* ════════════════════════════ RENDER ════════════════════════════════ */
+  const isEmbedded = pathname === "/";
+
   return (
-    <div style={{ background: "#f8f9fa", minHeight: "100vh" }}>
-      <div className="mx-auto w-full max-w-[1440px] pt-20 md:pt-24 px-3 md:px-6 pb-8">
+    <div style={{ background: "#f8f9fa", minHeight: isEmbedded ? "auto" : "100vh" }}>
+      <div className={cn("mx-auto w-full max-w-[1440px] px-3 md:px-6 pb-8", isEmbedded ? "pt-4 md:pt-6" : "pt-20 md:pt-24")}>
         
         {/* ── Search Bar and Filters ── */}
         <div className="bg-white p-3 md:p-5 rounded-2xl border border-[rgba(0,57,60,0.08)] mb-4 md:mb-5 flex flex-col gap-3 md:gap-4 shadow-sm">
@@ -281,29 +249,6 @@ function SearchResultsContent() {
           <div className="flex flex-wrap items-center justify-between gap-3 md:gap-4">
             
             <div className="flex items-center flex-wrap gap-3 w-full md:w-auto">
-              {/* Content Tabs (All, Free, Premium) - Restored Old Design */}
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                {(["all", "free", "premium"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => updateParams({ content: tab === "all" ? null : tab })}
-                    style={{
-                      padding: "0.35rem 1rem", borderRadius: "2rem",
-                      border: contentType === tab ? "none" : "1px solid rgba(0,57,60,0.15)",
-                      background: contentType === tab ? "#073238" : "transparent",
-                      color: contentType === tab ? "#ffffff" : "#00393c",
-                      fontSize: "0.82rem", fontWeight: 600, cursor: "pointer",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {tab === "premium" && <Crown size={12} style={{ display: "inline", marginRight: "0.3rem", verticalAlign: "middle" }} />}
-                    {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
-
-              <div className="hidden md:block w-px h-6 bg-gray-200"></div>
-
               {/* Desktop Filters - Using flex-wrap instead of overflow-x to fix dropdown clipping */}
               <div className="hidden md:flex flex-wrap items-center gap-2">
                 <FilterDropdown 
@@ -457,27 +402,11 @@ function SearchResultsContent() {
           </span>
         </div>
 
-        {/* ── Suggested Visuals (From Creators You Follow) ── */}
-        {!isLoading && suggestedVisuals.length > 0 && !q && activeFilterCount === 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white">
-                <Heart size={16} fill="currentColor" />
-              </div>
-              <h2 className="text-xl font-black text-brand tracking-tight">From Creators You Follow</h2>
-            </div>
-            <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide">
-              {suggestedVisuals.map((visual) => (
-                <div key={`suggested-${visual.id}`} className="flex-shrink-0 w-[260px] sm:w-[280px]">
-                  <VisualCard 
-                    visual={visual}
-                    isSaved={savedIds.has(visual.id)}
-                    onSave={() => toggleSave(visual.id, visual.title)}
-                    onDownload={() => handleDownload(visual)}
-                  />
-                </div>
-              ))}
-            </div>
+        {/* ── Discovery Hub (Only when no search/filters) ── */}
+        {!isLoading && activeFilterCount === 0 && !q && !isEmbedded && (
+          <div className="mb-12">
+            <DiscoveryHub />
+            <h2 className="text-xl md:text-2xl font-black text-[#00393c] tracking-tight mt-12 mb-6 px-2">All Visuals</h2>
           </div>
         )}
 
@@ -513,22 +442,19 @@ function SearchResultsContent() {
           </div>
         )}
 
-        {/* ── Conditional Render: Discovery Feed vs Search Results ── */}
-        {!isLoading && activeFilterCount === 0 && !q ? (
-          <DiscoveryFeed savedIds={savedIds} onSave={toggleSave} onDownload={handleDownload} />
-        ) : (
-          <>
-            {/* ── Empty State ── */}
-            {!isLoading && visuals.length === 0 && (
-              <EmptyState
-                hasFilters={activeFilterCount > 0 || !!q}
-                onClearFilters={clearAllFilters}
-                userRole={userRole}
-              />
-            )}
+        {/* ── Search Results & All Visuals Grid ── */}
+        <>
+          {/* ── Empty State ── */}
+          {!isLoading && visuals.length === 0 && (
+            <EmptyState
+              hasFilters={activeFilterCount > 0 || !!q}
+              onClearFilters={clearAllFilters}
+              userRole={userRole}
+            />
+          )}
 
-            {/* ── Visuals Grid ── */}
-            {!isLoading && visuals.length > 0 && (
+          {/* ── Visuals Grid ── */}
+          {!isLoading && visuals.length > 0 && (
               <>
                 <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-4 space-y-3 md:space-y-4">
                   {visuals.map((visual) => (
@@ -543,7 +469,6 @@ function SearchResultsContent() {
                   ))}
                 </div>
 
-                {/* Load More placeholder — future pagination */}
                 {visuals.length >= 50 && (
                   <div style={{ textAlign: "center", marginTop: "2rem" }}>
                     <button
@@ -560,7 +485,6 @@ function SearchResultsContent() {
               </>
             )}
           </>
-        )}
       </div>
 
       <style>{`
