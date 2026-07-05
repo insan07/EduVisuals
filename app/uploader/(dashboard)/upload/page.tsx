@@ -884,10 +884,10 @@ export default function ContributorUploadPortal() {
                     </button>
                     <button
                       onClick={handleSubmit}
-                      disabled={isSubmitting}
+                      disabled={uploading}
                       className="bg-brand text-white font-bold px-8 py-3.5 rounded-lg hover:bg-brand/90 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                      {isSubmitting ? (
+                      {uploading ? (
                         <>
                           <PremiumLoader className="text-white" />
                         </>
