@@ -406,7 +406,6 @@ function SearchResultsContent() {
         {!isLoading && activeFilterCount === 0 && !q && !isEmbedded && (
           <div className="mb-12">
             <DiscoveryHub />
-            <h2 className="text-xl md:text-2xl font-black text-[#00393c] tracking-tight mt-12 mb-6 px-2">All Visuals</h2>
           </div>
         )}
 
@@ -442,49 +441,51 @@ function SearchResultsContent() {
           </div>
         )}
 
-        {/* ── Search Results & All Visuals Grid ── */}
-        <>
-          {/* ── Empty State ── */}
-          {!isLoading && visuals.length === 0 && (
-            <EmptyState
-              hasFilters={activeFilterCount > 0 || !!q}
-              onClearFilters={clearAllFilters}
-              userRole={userRole}
-            />
-          )}
-
-          {/* ── Visuals Grid ── */}
-          {!isLoading && visuals.length > 0 && (
-              <>
-                <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-4 space-y-3 md:space-y-4">
-                  {visuals.map((visual) => (
-                    <div key={visual.id} style={{ breakInside: "avoid" }}>
-                      <VisualCard
-                        visual={visual}
-                        isSaved={savedIds.has(visual.id)}
-                        onSave={() => toggleSave(visual.id, visual.title)}
-                        onDownload={() => handleDownload(visual)}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                {visuals.length >= 50 && (
-                  <div style={{ textAlign: "center", marginTop: "2rem" }}>
-                    <button
-                      style={{
-                        background: "#073238", color: "#ffffff", border: "none",
-                        borderRadius: "0.75rem", padding: "0.75rem 2rem",
-                        fontSize: "0.9rem", fontWeight: 600, cursor: "pointer",
-                      }}
-                    >
-                      Load More
-                    </button>
-                  </div>
-                )}
-              </>
+        {/* ── Search Results Grid (Only shows when searching/filtering) ── */}
+        {(activeFilterCount > 0 || !!q) && (
+          <>
+            {/* ── Empty State ── */}
+            {!isLoading && visuals.length === 0 && (
+              <EmptyState
+                hasFilters={activeFilterCount > 0 || !!q}
+                onClearFilters={clearAllFilters}
+                userRole={userRole}
+              />
             )}
+
+            {/* ── Visuals Grid ── */}
+            {!isLoading && visuals.length > 0 && (
+                <>
+                  <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-4 space-y-3 md:space-y-4">
+                    {visuals.map((visual) => (
+                      <div key={visual.id} style={{ breakInside: "avoid" }}>
+                        <VisualCard
+                          visual={visual}
+                          isSaved={savedIds.has(visual.id)}
+                          onSave={() => toggleSave(visual.id, visual.title)}
+                          onDownload={() => handleDownload(visual)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {visuals.length >= 50 && (
+                    <div style={{ textAlign: "center", marginTop: "2rem" }}>
+                      <button
+                        style={{
+                          background: "#073238", color: "#ffffff", border: "none",
+                          borderRadius: "0.75rem", padding: "0.75rem 2rem",
+                          fontSize: "0.9rem", fontWeight: 600, cursor: "pointer",
+                        }}
+                      >
+                        Load More
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
           </>
+        )}
       </div>
 
       <style>{`

@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowRight, CheckCircle2, Shield, Upload, FileImage, Loader2, Sparkles, GraduationCap } from "lucide-react";
+import { ArrowRight, CheckCircle2, Shield, Upload, FileImage , Sparkles, GraduationCap } from "lucide-react";
 import Link from "next/link";
+import { PremiumLoader } from "@/components/PremiumLoader";
 
 const SUBJECT_OPTIONS = ["Mathematics", "Science", "Physics", "Chemistry", "Biology", "Languages", "Programming", "History", "Geography", "Art & Design", "Business Studies", "Economics"];
 const AUDIENCE_OPTIONS = ["Primary (Grades 1-5)", "Middle School (Grades 6-9)", "O/Level (Grades 10-11)", "A/Level (Grades 12-13)", "University / Higher Ed", "Professional"];
@@ -109,7 +110,7 @@ export default function UploaderOnboardingPage() {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="w-8 h-8 text-brand animate-spin" />
+        <PremiumLoader className="w-8 h-8 text-brand animate-spin" />
       </div>
     );
   }
@@ -346,7 +347,7 @@ export default function UploaderOnboardingPage() {
                   <textarea 
                     value={bio}
                     onChange={(e) => setBio(e.target.value.slice(0, 200))}
-                    placeholder="Share your background in creating educational visuals, diagrams, or study materials..."
+                    placeholder="e.g., I create engaging Mind Maps and diagrams to help high school students master complex Science and Math concepts."
                     className="w-full bg-[#f8f9fa] border-2 border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-brand focus:outline-none focus:border-brand focus:bg-white focus:ring-4 focus:ring-brand/10 transition-all resize-none h-24 placeholder:text-gray-400"
                   />
                 </div>
@@ -453,7 +454,7 @@ export default function UploaderOnboardingPage() {
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <PremiumLoader className="w-5 h-5 animate-spin" />
                         Setting up account...
                       </>
                     ) : (

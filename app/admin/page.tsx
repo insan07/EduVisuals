@@ -35,6 +35,7 @@ import { formatLKR, formatDownloadCount } from "@/lib/utils";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { GRADES, SUBJECTS, TYPES, SYLLABUSES, MEDIUMS } from "@/lib/constants";
 import EditVisualModal from "@/components/EditVisualModal";
+import { PremiumLoader } from "@/components/PremiumLoader";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -493,7 +494,7 @@ export default function AdminDashboard() {
   if (!user) {
     return (
       <div className="flex min-h-screen bg-brand-surface items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
+        <PremiumLoader />
       </div>
     );
   }

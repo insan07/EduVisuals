@@ -47,29 +47,32 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-brand-surface text-brand font-sans">
 
       {/* 1. HERO SECTION (Split Layout) */}
-      <section className="relative pt-20 pb-8 md:pt-18 md:pb-12 px-4 lg:px-12 max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center min-h-[85vh] overflow-hidden lg:overflow-visible">
+      <section className="relative pt-18 pb-4 lg:pb-12 px-4 lg:px-12 max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center min-h-0 lg:min-h-[85vh] overflow-hidden lg:overflow-visible">
 
         {/* Left Side: Content */}
-        <div className="flex flex-col items-start text-left relative z-20 lg:pr-8 lg:pl-10">
+        <div className="flex flex-col items-center text-center lg:items-start lg:text-left relative z-20 lg:pr-8 lg:pl-10 w-full">
           
-          <h1 className="text-3xl md:text-4xl lg:text-[3.25rem] font-black tracking-tight mb-8 leading-[1.05] text-[#111827]">
-            Master concepts <br className="hidden md:block" />
-            <span className="inline-block lg:whitespace-nowrap">faster with <ChangingText /></span>
+          <h1 className="text-5xl md:text-6xl lg:text-[3.25rem] font-black tracking-tight mb-6 md:mb-8 leading-[1.15] lg:leading-[1.05] text-[#111827] w-full">
+            <span className="block lg:inline">Learn visually <br className="hidden md:block" /></span>
+            <span className="block lg:inline lg:whitespace-nowrap mt-2 lg:mt-0">
+              with <br className="block md:hidden" />
+              <span className="inline-block mt-2 lg:mt-0 text-brand"><ChangingText /></span>
+            </span>
           </h1>
 
-          <p className="text-base md:text-lg text-gray-600 max-w-lg mb-10 font-medium leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-600 max-w-lg mb-8 lg:mb-10 font-medium leading-relaxed mx-auto lg:mx-0">
             Access world-class diagrams, worksheets, mind maps, and illustrations engineered for all major international syllabuses. Accelerate your memory retention today.
           </p>
 
           {/* Premium Search Bar */}
-          <div className="w-full max-w-xl mb-6 bg-white p-2 rounded-full border border-gray-200 shadow-md flex items-center transition-all hover:shadow-lg">
+          <div className="w-full max-w-xl mb-8 lg:mb-6 bg-white p-2 rounded-full border border-gray-200 shadow-md flex items-center transition-all hover:shadow-lg mx-auto lg:mx-0">
             <div className="flex-1 w-full">
               <SearchBar darkHero={false} />
             </div>
           </div>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
+          <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 w-full">
             <Link
               href="/visuals"
               className="w-full sm:w-auto px-8 py-4 rounded-full font-bold text-white bg-[#0f172a] hover:bg-black transition-colors flex items-center justify-center gap-3 shadow-lg"
@@ -81,7 +84,7 @@ export default function Home() {
         </div>
 
         {/* Right Side: Shuffled Image Grid (3 Images) */}
-        <div className="relative w-full h-[300px] sm:h-[400px] lg:h-[500px] flex items-center justify-center z-10 scale-95 lg:scale-90 mt-4 lg:mt-0">
+        <div className="relative hidden lg:flex w-full h-[300px] sm:h-[400px] lg:h-[500px] items-center justify-center z-10 scale-95 lg:scale-90 mt-4 lg:mt-0">
           {/* Main Mindmap */}
           <div className="absolute top-[5%] right-[15%] w-[50%] h-[50%] rounded-3xl overflow-hidden shadow-2xl border-[6px] border-white rotate-6 hover:rotate-0 hover:scale-105 hover:z-50 transition-all duration-500 z-50">
             <Image src="/mindmap.png" alt="Educational Mindmap" fill className="object-cover" priority />
@@ -98,11 +101,11 @@ export default function Home() {
       </section>
 
       {/* POPULAR COLLECTIONS */}
-      <section className="py-24 px-4 bg-gray-50">
+      <section className="py-6 lg:py-16 px-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-12">
-            <h2 className="text-3xl md:text-4xl font-black text-brand mb-4 tracking-tight">Explore Popular Collections</h2>
-            <p className="text-gray-500 font-medium max-w-xl text-lg">
+          <div className="mb-6 lg:mb-12">
+            <h2 className="text-xl md:text-2xl font-black text-brand mb-3 tracking-tight">Explore Popular Collections</h2>
+            <p className="text-gray-500 font-medium max-w-xl text-sm md:text-base">
               Discover our most downloaded premium resource packs, curated specifically for top-performing students and educators.
             </p>
           </div>
@@ -116,20 +119,21 @@ export default function Home() {
               { id: 5, title: "Medical & Anatomy", count: "930 Visuals", image: "/diagram.png", link: "/visuals?q=anatomy" },
               { id: 6, title: "Revision Flashcards", count: "1,500 Visuals", image: "/flashcard.png", link: "/visuals?q=flashcard" },
             ].map(col => (
-              <Link href={col.link} key={col.id} className="group relative h-64 md:h-[320px] w-full rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 block border border-gray-200">
-                <Image src={col.image} alt={col.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent transition-opacity duration-300 group-hover:opacity-90"></div>
-                <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col items-start justify-end z-10">
-                  <span className="text-[10px] sm:text-xs font-bold text-white uppercase tracking-wider mb-2 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-sm">{col.count}</span>
-                  <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">{col.title}</h3>
+              <Link href={col.link} key={col.id} className="group flex flex-col w-full rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-200 bg-white">
+                <div className="relative h-48 w-full overflow-hidden border-b border-gray-100">
+                  <Image src={col.image} alt={col.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
+                </div>
+                <div className="p-5 flex flex-col">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{col.count}</span>
+                  <h3 className="text-base font-bold text-brand tracking-tight">{col.title}</h3>
                 </div>
               </Link>
             ))}
           </div>
           
           <div className="mt-12 flex justify-center">
-             <Link href="/visuals" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-4 rounded-full border border-gray-200 text-brand font-bold bg-white shadow-sm hover:shadow-md hover:border-gray-300 transition-all">
-                Explore More Collections <ArrowRight className="w-5 h-5" />
+             <Link href="/visuals" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-6 py-3 rounded-lg border border-gray-200 text-brand font-bold bg-white hover:bg-gray-50 transition-colors text-sm shadow-sm">
+                Explore More Collections <ArrowRight className="w-4 h-4" />
              </Link>
           </div>
         </div>

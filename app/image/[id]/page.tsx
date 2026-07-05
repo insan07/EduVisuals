@@ -35,9 +35,11 @@ import {
   Bookmark,
   UserCheck,
   BadgeCheck,
+  Star,
 } from "lucide-react";
 import { GRADES, SUBJECTS, TYPES, SYLLABUSES, MEDIUMS } from "@/lib/constants";
 import EditVisualModal from "@/components/EditVisualModal";
+import { PremiumLoader } from "@/components/PremiumLoader";
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -54,6 +56,8 @@ export default function ImageDetailPage({ params }: PageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isNotFound, setIsNotFound] = useState(false);
   const [creator, setCreator] = useState<any>(null);
+  const [creatorRating, setCreatorRating] = useState<number>(0);
+  const [creatorTotalRatings, setCreatorTotalRatings] = useState<number>(0);
   
   const [userState, setUserState] = useState<"guest" | "free" | "premium">("guest");
   const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
@@ -90,6 +94,14 @@ export default function ImageDetailPage({ params }: PageProps) {
 
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+  
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [hoveredStar, setHoveredStar] = useState(0);
+
+  const [visualRating, setVisualRating] = useState(0);
+  const [hoverVisualRating, setHoverVisualRating] = useState(0);
+  const [hasRatedVisual, setHasRatedVisual] = useState(false);
 
   // Fetch real data
   useEffect(() => {
@@ -222,6 +234,23 @@ export default function ImageDetailPage({ params }: PageProps) {
         if (followData) setIsFollowing(true);
       }
 
+      // Fetch creator ratings
+      if (creatorProfile && creatorProfile.id !== "official") {
+        const { data: rData } = await supabase
+          .from("creator_ratings")
+          .select("rating, rater_id")
+          .eq("creator_id", creatorProfile.id);
+        if (rData && rData.length > 0) {
+          const avg = rData.reduce((sum, r) => sum + r.rating, 0) / rData.length;
+          setCreatorRating(avg);
+          setCreatorTotalRatings(rData.length);
+          if (userId) {
+            const uRating = rData.find((r) => r.rater_id === userId);
+            if (uRating) setUserRating(uRating.rating);
+          }
+        }
+      }
+
       setIsLoading(false);
 
       // 3. Track in localStorage for "Recently Seen" feature
@@ -301,6 +330,42 @@ export default function ImageDetailPage({ params }: PageProps) {
     } finally {
       setIsFollowLoading(false);
     }
+  };
+
+  const handleRateSubmit = async (val: number) => {
+    if (!currentUser) {
+      authModal.open("signin");
+      setIsRatingModalOpen(false);
+      return;
+    }
+    try {
+      if (userRating > 0) {
+        await supabase
+          .from('creator_ratings')
+          .update({ rating: val })
+          .eq('rater_id', currentUser.id)
+          .eq('creator_id', creator.id);
+      } else {
+        await supabase
+          .from('creator_ratings')
+          .insert({ rater_id: currentUser.id, creator_id: creator.id, rating: val });
+        setCreatorTotalRatings(prev => prev + 1);
+      }
+      setUserRating(val);
+      // Re-fetch average
+      const { data: ratingsData } = await supabase
+        .from('creator_ratings')
+        .select('rating')
+        .eq('creator_id', creator.id);
+      if (ratingsData) {
+        const avg = ratingsData.length > 0 ? ratingsData.reduce((sum, r) => sum + r.rating, 0) / ratingsData.length : 0;
+        setCreatorRating(avg);
+        setCreatorTotalRatings(ratingsData.length);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setIsRatingModalOpen(false);
   };
 
   const handleDeleteVisual = async () => {
@@ -590,10 +655,10 @@ export default function ImageDetailPage({ params }: PageProps) {
       {/* Save Button */}
       <button 
         onClick={() => collectionModal.open(visual.id, visual.title)}
-        className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-500 hover:text-brand transition-colors shadow-sm"
+        className="p-1 sm:p-2 text-gray-400 hover:text-brand transition-colors"
         title="Save Visual"
       >
-        <Bookmark className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+        <Bookmark className="w-5 h-5 sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
       </button>
 
       {/* Share Button (opens dropdown) */}
@@ -601,10 +666,10 @@ export default function ImageDetailPage({ params }: PageProps) {
         <button 
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
-          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-500 hover:text-brand transition-colors shadow-sm"
+          className="p-1 sm:p-2 text-gray-400 hover:text-brand transition-colors"
           title="Share"
         >
-          <Share2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+          <Share2 className="w-5 h-5 sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
         </button>
         {isDropdownOpen && (
           <div className="absolute right-0 sm:left-0 sm:right-auto top-full mt-2 w-48 bg-white border border-brand-border rounded-xl shadow-lg z-30 py-2 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
@@ -641,10 +706,10 @@ export default function ImageDetailPage({ params }: PageProps) {
         <button 
           onClick={() => setIsMoreDropdownOpen(!isMoreDropdownOpen)}
           onBlur={() => setTimeout(() => setIsMoreDropdownOpen(false), 200)}
-          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-500 hover:text-brand transition-colors shadow-sm"
+          className="p-1 sm:p-2 text-gray-400 hover:text-brand transition-colors"
           title="More Actions"
         >
-          <MoreHorizontal className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+          <MoreHorizontal className="w-5 h-5 sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
         </button>
         {isMoreDropdownOpen && (
           <div className="absolute right-0 sm:left-0 sm:right-auto top-full mt-2 w-48 bg-white border border-brand-border rounded-xl shadow-lg z-30 py-2 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
@@ -957,7 +1022,45 @@ export default function ImageDetailPage({ params }: PageProps) {
               )}
             </div>
 
-            <hr className="border-brand-border" />
+            {/* Visual Rating Section */}
+            <div className="mt-2">
+              <h3 className="font-extrabold text-brand mb-1 text-sm sm:text-base">Rate this visual</h3>
+              <p className="text-[11px] sm:text-xs text-brand-faint mb-2 font-medium">Tell others what you think about this image.</p>
+              <div className="flex gap-1 sm:gap-1.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button 
+                    key={star}
+                    onClick={() => {
+                      if (!currentUser) {
+                        useAuthModal.getState().open("signin");
+                        return;
+                      }
+                      setVisualRating(star);
+                      setHasRatedVisual(true);
+                    }}
+                    onMouseEnter={() => setHoverVisualRating(star)}
+                    onMouseLeave={() => setHoverVisualRating(0)}
+                    className="p-1 -ml-1 transition-transform hover:scale-110"
+                  >
+                    <Star 
+                      className={`w-6 h-6 sm:w-7 sm:h-7 transition-colors ${
+                        star <= (hoverVisualRating || visualRating) 
+                          ? 'text-[#F59E0B] fill-current' 
+                          : 'text-gray-300'
+                      }`} 
+                      strokeWidth={star <= (hoverVisualRating || visualRating) ? 1 : 1.5}
+                    />
+                  </button>
+                ))}
+              </div>
+              {hasRatedVisual && (
+                <p className="text-[11px] font-semibold text-emerald-600 mt-2 animate-in fade-in">
+                  Thanks for your feedback!
+                </p>
+              )}
+            </div>
+
+            <hr className="border-brand-border mt-2" />
 
             {/* CREATOR CARD */}
             {creator && (
@@ -980,7 +1083,19 @@ export default function ImageDetailPage({ params }: PageProps) {
                       </h4>
                       <BadgeCheck className="w-4 h-4 sm:w-[18px] sm:h-[18px] shrink-0" fill="#2563eb" color="white" />
                     </Link>
-                    <span className="text-xs text-brand-faint font-medium mt-0.5">Educational Creator</span>
+                    <div className="mt-1">
+                      {creatorTotalRatings > 0 ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-brand-faint font-bold">
+                            {creatorRating.toFixed(1)}
+                          </span>
+                          <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#F59E0B] fill-current -mt-0.5" />
+                          <span className="text-xs text-brand-faint font-medium">({creatorTotalRatings})</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-brand-faint font-medium flex items-center gap-1">No ratings yet</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
@@ -989,7 +1104,7 @@ export default function ImageDetailPage({ params }: PageProps) {
                   <button 
                     onClick={handleFollow}
                     disabled={isFollowLoading}
-                    className={`font-bold uppercase text-[10px] sm:text-[11px] px-4 sm:px-5 py-1.5 sm:py-2 rounded-lg transition-all shrink-0 tracking-wide border ${
+                    className={`font-bold uppercase text-[10px] sm:text-[11px] px-4 sm:px-5 py-1.5 sm:py-2 rounded-full transition-all shrink-0 tracking-wide border ${
                       isFollowing 
                         ? "bg-brand/10 text-brand border-brand/20 hover:bg-brand/20" 
                         : "bg-brand text-white border-brand hover:bg-brand/90 shadow-sm hover:shadow-md hover:-translate-y-0.5"
@@ -1015,8 +1130,6 @@ export default function ImageDetailPage({ params }: PageProps) {
                 ))}
               </div>
             )}
-
-
 
           </div>
         </div>
@@ -1164,6 +1277,53 @@ export default function ImageDetailPage({ params }: PageProps) {
               >
                 Report
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rating Modal */}
+      {isRatingModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-brand/40 backdrop-blur-sm animate-in fade-in" onClick={() => setIsRatingModalOpen(false)} />
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl relative z-10 animate-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setIsRatingModalOpen(false)}
+              className="absolute top-4 right-4 text-brand-faint hover:text-brand transition-colors bg-brand-surface rounded-full p-2"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="text-center mb-6 mt-2">
+              <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 ring-8 ring-amber-50">
+                <Star className="w-8 h-8 fill-amber-500" />
+              </div>
+              <h3 className="text-xl font-black text-brand mb-1">Rate Creator</h3>
+              <p className="text-sm font-medium text-brand-faint leading-relaxed">
+                {userRating > 0 ? "Update your rating for" : "How would you rate"} <span className="text-brand font-bold">{creator?.display_name}</span>?
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-center gap-2 mb-8">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onMouseEnter={() => setHoveredStar(star)}
+                  onMouseLeave={() => setHoveredStar(0)}
+                  onClick={() => handleRateSubmit(star)}
+                  className="p-1 transition-transform hover:scale-110 focus:outline-none"
+                >
+                  <Star 
+                    className={`w-10 h-10 transition-colors ${
+                      (hoveredStar || userRating) >= star 
+                        ? 'text-amber-500 fill-amber-500 drop-shadow-sm' 
+                        : 'text-gray-200 fill-gray-200'
+                    }`} 
+                  />
+                </button>
+              ))}
+            </div>
+            <div className="text-center text-[10px] font-black text-brand-faint uppercase tracking-widest bg-brand-surface py-2 rounded-lg">
+              Click a star to submit
             </div>
           </div>
         </div>

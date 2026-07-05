@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { ArrowLeft, Folder, Trash2, FileImage } from "lucide-react";
 import ImageCard from "@/components/ImageCard";
+import { PremiumLoader } from "@/components/PremiumLoader";
 
 interface PageProps {
   params: Promise<{ id: string }>;

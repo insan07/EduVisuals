@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Settings as SettingsIcon, Save, Upload, User } from "lucide-react";
+import {  Settings as SettingsIcon, Save, Upload, User } from "lucide-react";
+import { PremiumLoader } from "@/components/PremiumLoader";
 
 export default function UploaderSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -110,7 +111,7 @@ export default function UploaderSettingsPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 text-brand animate-spin" />
+        <PremiumLoader className="w-8 h-8 text-brand animate-spin" />
       </div>
     );
   }
@@ -124,7 +125,7 @@ export default function UploaderSettingsPage() {
         <p className="text-brand-muted font-medium">Update your public contributor profile information.</p>
       </div>
 
-      <div className="bg-white rounded-3xl border border-brand-border p-6 md:p-8 shadow-sm">
+      <div className="bg-white rounded-xl border border-brand-border p-6 md:p-8 shadow-sm">
         <div className="flex flex-col gap-6">
           
           {/* Profile Picture Upload */}
@@ -165,7 +166,7 @@ export default function UploaderSettingsPage() {
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full bg-[#f8f9fa] border border-brand-border rounded-xl px-4 py-3 text-sm font-medium text-brand focus:outline-none focus:border-brand transition-all"
+              className="w-full bg-brand-surface border border-brand-border rounded-lg px-4 py-2.5 text-sm font-medium text-brand focus:outline-none focus:border-brand/50 transition-all"
             />
           </div>
 
@@ -174,9 +175,10 @@ export default function UploaderSettingsPage() {
             <textarea 
               value={bio}
               onChange={(e) => setBio(e.target.value.slice(0, 200))}
-              className="w-full bg-[#f8f9fa] border border-brand-border rounded-xl px-4 py-3 text-sm font-medium text-brand focus:outline-none focus:border-brand transition-all resize-none h-24"
+              placeholder="e.g., I create engaging Mind Maps and diagrams to help high school students master complex Science and Math concepts."
+              className="w-full bg-brand-surface border border-brand-border rounded-lg px-4 py-3 text-sm font-medium text-brand focus:outline-none focus:border-brand/50 transition-all resize-none h-24 placeholder:text-gray-400"
             />
-            <div className="text-right text-xs text-brand-muted mt-1 font-semibold">{bio.length}/200</div>
+            <div className="text-right text-xs text-brand-faint mt-1 font-semibold">{bio.length}/200</div>
           </div>
 
           <div>
@@ -185,7 +187,7 @@ export default function UploaderSettingsPage() {
               type="url"
               value={portfolio}
               onChange={(e) => setPortfolio(e.target.value)}
-              className="w-full bg-[#f8f9fa] border border-brand-border rounded-xl px-4 py-3 text-sm font-medium text-brand focus:outline-none focus:border-brand transition-all"
+              className="w-full bg-brand-surface border border-brand-border rounded-lg px-4 py-2.5 text-sm font-medium text-brand focus:outline-none focus:border-brand/50 transition-all"
             />
           </div>
 
@@ -208,9 +210,9 @@ export default function UploaderSettingsPage() {
             <button 
               onClick={handleSave}
               disabled={saving}
-              className="bg-brand text-white font-bold px-8 py-3 rounded-xl hover:bg-[#0a4a52] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50"
+              className="bg-brand text-white font-bold px-6 py-2.5 rounded-lg hover:bg-[#0a4a52] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50 text-sm"
             >
-              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+              {saving ? <PremiumLoader className="text-white" /> : <Save className="w-4 h-4" />}
               Save Changes
             </button>
           </div>

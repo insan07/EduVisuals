@@ -3,9 +3,10 @@
 import React, { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { Loader2, ArrowLeft, Award, BookOpen, User, Link as LinkIcon, Sparkles, Star, Users, CheckCircle, Plus, X, Share2, ChevronDown, Filter, LayoutGrid, Tag, Layers, FileImage, Search } from "lucide-react";
+import {  ArrowLeft, Award, BookOpen, User, Link as LinkIcon, Sparkles, Star, Users, CheckCircle, Plus, X, Share2, ChevronDown, Filter, LayoutGrid, Tag, Layers, FileImage, Search, BadgeCheck } from "lucide-react";
 import { useAuthModal } from "@/store/useAuthModal";
 import VisualCard from "@/components/VisualCard";
+import { PremiumLoader } from "@/components/PremiumLoader";
 
 export default function CreatorProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -34,9 +35,28 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ id: s
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
   const [gradeFilter, setGradeFilter] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [keywordFilter, setKeywordFilter] = useState<string | null>(null);
   const [premiumFilter, setPremiumFilter] = useState<string | null>(null);
   const [sortFilter, setSortFilter] = useState<string>("Recent");
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState<boolean>(false);
+  const topTopics = React.useMemo(() => {
+    if (!visuals || visuals.length === 0) return [];
+    
+    // Count frequencies of subjects
+    const counts: Record<string, number> = {};
+    visuals.forEach(v => {
+      if (v.subject && v.subject !== "General") {
+        counts[v.subject] = (counts[v.subject] || 0) + 1;
+      }
+    });
+    
+    // Sort and take top 3
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(entry => entry[0]);
+  }, [visuals]);
 
   useEffect(() => {
     async function fetchCreatorData() {
@@ -100,6 +120,7 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ id: s
             subject: tags.find((t: any) => t.tag_type === "subject")?.tag || "General",
             grade: tags.find((t: any) => t.tag_type === "grade")?.tag || "General",
             type: tags.find((t: any) => t.tag_type === "type")?.tag || "Diagram",
+            keywords: tags.filter((t: any) => t.tag_type === "keyword").map((t: any) => t.tag),
           };
         });
         setVisuals(mapped);
@@ -233,11 +254,13 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ id: s
   const availableSubjects = Array.from(new Set(visuals.map(v => v.subject))).filter(Boolean);
   const availableGrades = Array.from(new Set(visuals.map(v => v.grade))).filter(Boolean);
   const availableTypes = Array.from(new Set(visuals.map(v => v.type))).filter(Boolean);
+  const availableKeywords = Array.from(new Set(visuals.flatMap(v => v.keywords || []))).filter(Boolean);
 
   const filteredVisuals = visuals.filter(v => {
     if (subjectFilter && v.subject !== subjectFilter) return false;
     if (gradeFilter && v.grade !== gradeFilter) return false;
     if (typeFilter && v.type !== typeFilter) return false;
+    if (keywordFilter && !(v.keywords || []).includes(keywordFilter)) return false;
     if (premiumFilter === "Premium" && !v.is_premium) return false;
     if (premiumFilter === "Free" && v.is_premium) return false;
     if (searchTerm && !v.title?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
@@ -250,7 +273,7 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ id: s
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-brand-surface pt-20">
-        <Loader2 className="w-8 h-8 text-brand animate-spin" />
+        <PremiumLoader className="w-8 h-8 text-brand animate-spin" />
       </div>
     );
   }
@@ -275,98 +298,126 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ id: s
           Back to Library
         </Link>
         
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-12 items-start">
           
           {/* LEFT SIDEBAR: PROFILE INFO */}
-          <div className="w-full lg:w-[220px] xl:w-[240px] flex-shrink-0 bg-white rounded-3xl p-5 border border-brand-border shadow-sm lg:sticky lg:top-24 flex flex-col items-center text-center">
-            {/* Avatar */}
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-brand flex items-center justify-center text-white font-black text-2xl md:text-3xl shadow-md border-4 border-white mb-3 relative">
-              {creator.display_name?.charAt(0).toUpperCase()}
-            </div>
+          <div className="w-full lg:w-[280px] xl:w-[300px] flex-shrink-0 lg:sticky lg:top-24 flex flex-col items-start text-left">
             
-            {/* Name */}
-            <h1 className="text-lg md:text-xl font-black text-brand tracking-tight mb-4">
-              {creator.display_name}
-            </h1>
-
-            {/* Actions: Follow & Share */}
-            <div className="flex items-center justify-center gap-3 mb-8 w-full">
-              {(!currentUser || currentUser.id !== creatorId) && (
-                <button
-                  onClick={handleFollowToggle}
-                  disabled={isFollowLoading}
-                  className={`flex-1 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-                    isFollowing 
-                      ? 'bg-gray-100 text-brand hover:bg-gray-200 border border-gray-200'
-                      : 'bg-[#1a1a1a] hover:bg-black text-white shadow-sm'
-                  }`}
-                >
-                  {isFollowLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : isFollowing ? (
-                    <>
-                      <CheckCircle className="w-4 h-4" />
-                      Following
-                    </>
-                  ) : (
-                    "Follow"
-                  )}
-                </button>
-              )}
-              <button 
-                className="p-3 rounded-2xl border border-gray-200 text-gray-500 hover:text-brand hover:bg-gray-50 transition-colors flex-shrink-0"
-                onClick={() => {
-                  if (typeof window !== "undefined") {
-                    navigator.clipboard.writeText(window.location.href);
-                    alert("Link copied to clipboard!");
-                  }
-                }}
-              >
-                <Share2 className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Stats Line */}
-            <div className="flex flex-col items-center w-full gap-4 mb-8">
-              <div className="flex justify-between w-full text-sm font-semibold text-gray-500 px-2 xl:px-4">
-                <div className="flex flex-col items-center">
-                  <span className="text-xl font-black text-brand">{followerCount}</span>
-                  <span className="text-[9px] uppercase tracking-wider mt-1 text-gray-400">Followers</span>
+            {/* Horizontal Profile Card Layout */}
+            <div className="flex flex-row items-start text-left gap-4 md:gap-5 mb-3 w-full">
+              
+              {/* Avatar (Left) */}
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-brand flex items-center justify-center text-white font-black text-2xl overflow-hidden shadow-sm flex-shrink-0">
+                {creator.avatar_url ? (
+                  <img src={creator.avatar_url} alt={creator.display_name} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                )}
+              </div>
+              
+              {/* Info & Actions (Right) */}
+              <div className="flex flex-col flex-1 min-w-0 pt-1">
+                
+                {/* Name & Verified Icon */}
+                <div className="flex items-start gap-1.5 mb-0.5">
+                  <h1 className="text-lg font-black text-gray-900 tracking-tight leading-tight break-words">
+                    {creator.display_name}
+                  </h1>
+                  <BadgeCheck className="w-4 h-4 text-brand fill-brand text-white flex-shrink-0 mt-0.5" />
                 </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-xl font-black text-brand">{visuals.length}</span>
-                  <span className="text-[9px] uppercase tracking-wider mt-1 text-gray-400">Visuals</span>
-                </div>
-                <div className="flex flex-col items-center cursor-pointer hover:text-amber-500 transition-colors group" onClick={() => setIsRatingModalOpen(true)}>
-                  <div className="flex items-center gap-1 text-xl font-black text-brand group-hover:text-amber-500">
-                    <span>{averageRating > 0 ? averageRating.toFixed(1) : '-'}</span>
-                    <Star className="w-4 h-4 fill-amber-500 text-amber-500 group-hover:scale-110 transition-transform -mt-0.5" />
+                
+                {/* Degree / Qualification */}
+                {creator.highest_qualification && (
+                  <p className="text-xs font-medium text-gray-500 mb-3 truncate">{creator.highest_qualification}</p>
+                )}
+
+                {/* Stats (Followers, Visuals, Ratings) in small */}
+                <div className="flex items-center flex-wrap gap-4 mb-3 text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="font-black text-gray-900">{followerCount}</span>
+                    <span className="font-semibold text-gray-500">Followers</span>
                   </div>
-                  <span className="text-[9px] uppercase tracking-wider mt-1 text-gray-400">({totalRatings}) Ratings</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-black text-gray-900">{visuals.length}</span>
+                    <span className="font-semibold text-gray-500">Visuals</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-black text-gray-900">{averageRating > 0 ? averageRating.toFixed(1) : '-'}</span>
+                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  </div>
                 </div>
+
+                {/* Actions Row (Follow Button + Link Icon + Share Icon) */}
+                <div className="flex items-center gap-4 text-gray-400 mb-2 mt-1">
+                  {(!currentUser || currentUser.id !== creatorId) && (
+                    <button
+                      onClick={handleFollowToggle}
+                      disabled={isFollowLoading}
+                      className={`px-8 py-1.5 rounded-full font-bold text-[10px] md:text-xs transition-all flex items-center justify-center gap-1.5 ${
+                        isFollowing 
+                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                          : 'bg-[#111827] hover:bg-black text-white shadow-sm'
+                      }`}
+                    >
+                      {isFollowLoading ? (
+                        <PremiumLoader className="w-3 h-3 animate-spin" />
+                      ) : isFollowing ? (
+                        "Following"
+                      ) : (
+                        "Follow"
+                      )}
+                    </button>
+                  )}
+                  {creator.portfolio_url && (
+                    <a 
+                      href={creator.portfolio_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="hover:text-brand transition-colors"
+                      title="Portfolio / Website"
+                    >
+                      <LinkIcon className="w-4 h-4" />
+                    </a>
+                  )}
+                  <button 
+                    className="hover:text-brand transition-colors"
+                    title="Share Profile"
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        navigator.clipboard.writeText(window.location.href);
+                        alert("Link copied to clipboard!");
+                      }
+                    }}
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                </div>
+                
               </div>
             </div>
 
-            <hr className="w-full border-gray-100 mb-6" />
-
-            {/* Edu & Bio */}
-            {creator.highest_qualification && (
-              <p className="text-brand-muted font-bold flex items-center justify-center gap-2 text-sm mb-4 bg-[#f8f9fa] w-full py-3 rounded-2xl">
-                {creator.highest_qualification}
-              </p>
-            )}
-
+            {/* BIO */}
             {creator.short_bio && (
-              <p className="text-gray-600 font-medium text-sm leading-relaxed mb-6">
-                {creator.short_bio}
-              </p>
+              <div className="w-full text-left mb-4 lg:mb-6">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">About Me</h3>
+                <p className="text-gray-600 font-medium text-sm leading-relaxed">
+                  {creator.short_bio}
+                </p>
+              </div>
             )}
 
-            {creator.portfolio_url && (
-              <a href={creator.portfolio_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors bg-emerald-50 hover:bg-emerald-100 py-3 rounded-2xl border border-emerald-100">
-                <LinkIcon className="w-4 h-4" />
-                Portfolio / Website
-              </a>
+            {/* TOPICS / KEYWORDS */}
+            {topTopics.length > 0 && (
+              <div className="w-full text-left mb-2 lg:mb-6">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Frequently Creates</h3>
+                <div className="flex flex-wrap gap-2">
+                  {topTopics.map(topic => (
+                    <span key={topic} className="px-2.5 py-1 bg-brand/5 text-brand font-bold text-[10px] rounded-md border border-brand/10">
+                      {topic}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
@@ -393,104 +444,133 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ id: s
             />
           </div>
 
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 w-full">
+          <div className="flex flex-row flex-wrap lg:flex-nowrap items-center justify-between gap-4 w-full">
             
+            {/* Mobile Filters Toggle Button */}
+            <button
+              onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
+              className="lg:hidden flex items-center justify-center gap-2 flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 order-1"
+            >
+              <Filter className="w-4 h-4" />
+              {isMobileFiltersOpen ? "Hide Filters" : "Filters"}
+            </button>
+
+            {/* Sort Dropdown */}
+            <div className="relative order-2 lg:order-3">
+              <button 
+                onClick={() => setActiveDropdown(activeDropdown === "sort" ? null : "sort")}
+                className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-600 hover:text-brand transition-colors"
+              >
+                {sortFilter}
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {activeDropdown === "sort" && (
+                <div className="absolute top-full right-0 mt-2 w-32 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-30">
+                  <button onClick={() => { setSortFilter("Recent"); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Recent</button>
+                  <button onClick={() => { setSortFilter("Popular"); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Popular</button>
+                </div>
+              )}
+            </div>
+
             {/* Pills */}
-            <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-            <button 
-              onClick={() => { setSubjectFilter(null); setGradeFilter(null); setTypeFilter(null); setPremiumFilter(null); setActiveDropdown(null); }}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${!subjectFilter && !gradeFilter && !typeFilter && !premiumFilter ? 'bg-brand text-white border-brand' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-              All Visuals
-            </button>
-            
-            {/* Subjects Dropdown */}
-            <div className="relative">
+            <div className={`w-full lg:w-auto flex-wrap gap-2 order-3 lg:order-2 ${isMobileFiltersOpen ? 'flex' : 'hidden lg:flex'}`}>
               <button 
-                onClick={() => setActiveDropdown(activeDropdown === "subjects" ? null : "subjects")}
-                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-colors ${subjectFilter ? 'bg-brand/10 border-brand text-brand' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                onClick={() => { setSubjectFilter(null); setGradeFilter(null); setTypeFilter(null); setKeywordFilter(null); setPremiumFilter(null); setActiveDropdown(null); }}
+                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${!subjectFilter && !gradeFilter && !typeFilter && !keywordFilter && !premiumFilter ? 'bg-brand text-white border-brand' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
               >
-                <BookOpen className="w-4 h-4" />
-                {subjectFilter || "Subjects"}
-                <ChevronDown className="w-3 h-3 ml-1" />
+                <LayoutGrid className="w-4 h-4" />
+                All Visuals
               </button>
-              {activeDropdown === "subjects" && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-30 max-h-60 overflow-y-auto">
-                  <button onClick={() => { setSubjectFilter(null); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 font-medium">All Subjects</button>
-                  {availableSubjects.map(sub => (
-                    <button key={sub as string} onClick={() => { setSubjectFilter(sub as string); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">{sub as string}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Grades Dropdown */}
-            <div className="relative">
-              <button 
-                onClick={() => setActiveDropdown(activeDropdown === "grades" ? null : "grades")}
-                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-colors ${gradeFilter ? 'bg-brand/10 border-brand text-brand' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
-              >
-                <Layers className="w-4 h-4" />
-                {gradeFilter || "Grades"}
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </button>
-              {activeDropdown === "grades" && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-30 max-h-60 overflow-y-auto">
-                  <button onClick={() => { setGradeFilter(null); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 font-medium">All Grades</button>
-                  {availableGrades.map(grade => (
-                    <button key={grade as string} onClick={() => { setGradeFilter(grade as string); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">{grade as string}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Types Dropdown */}
-            <div className="relative">
-              <button 
-                onClick={() => setActiveDropdown(activeDropdown === "types" ? null : "types")}
-                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-colors ${typeFilter ? 'bg-brand/10 border-brand text-brand' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
-              >
-                <FileImage className="w-4 h-4" />
-                {typeFilter || "Types"}
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </button>
-              {activeDropdown === "types" && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-30 max-h-60 overflow-y-auto">
-                  <button onClick={() => { setTypeFilter(null); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 font-medium">All Types</button>
-                  {availableTypes.map(type => (
-                    <button key={type as string} onClick={() => { setTypeFilter(type as string); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">{type as string}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {/* Premium Filter */}
-            <button 
-              onClick={() => setPremiumFilter(premiumFilter === "Premium" ? null : "Premium")}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-colors ${premiumFilter === "Premium" ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
-            >
-              <Sparkles className={`w-4 h-4 ${premiumFilter === "Premium" ? 'text-amber-500' : 'text-gray-400'}`} />
-              Premium
-            </button>
-          </div>
-
-          {/* Sort Dropdown */}
-          <div className="relative ml-auto">
-            <button 
-              onClick={() => setActiveDropdown(activeDropdown === "sort" ? null : "sort")}
-              className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-600 hover:text-brand transition-colors"
-            >
-              {sortFilter}
-              <ChevronDown className="w-4 h-4" />
-            </button>
-            {activeDropdown === "sort" && (
-              <div className="absolute top-full right-0 mt-2 w-32 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-30">
-                <button onClick={() => { setSortFilter("Recent"); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Recent</button>
-                <button onClick={() => { setSortFilter("Popular"); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Popular</button>
+              
+              {/* Subjects Dropdown */}
+              <div className="relative">
+                <button 
+                  onClick={() => setActiveDropdown(activeDropdown === "subjects" ? null : "subjects")}
+                  className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-colors ${subjectFilter ? 'bg-brand/10 border-brand text-brand' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  {subjectFilter || "Subjects"}
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </button>
+                {activeDropdown === "subjects" && (
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-30 max-h-60 overflow-y-auto">
+                    <button onClick={() => { setSubjectFilter(null); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 font-medium">All Subjects</button>
+                    {availableSubjects.map(sub => (
+                      <button key={sub as string} onClick={() => { setSubjectFilter(sub as string); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">{sub as string}</button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+
+              {/* Grades Dropdown */}
+              <div className="relative">
+                <button 
+                  onClick={() => setActiveDropdown(activeDropdown === "grades" ? null : "grades")}
+                  className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-colors ${gradeFilter ? 'bg-brand/10 border-brand text-brand' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <Layers className="w-4 h-4" />
+                  {gradeFilter || "Grades"}
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </button>
+                {activeDropdown === "grades" && (
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-30 max-h-60 overflow-y-auto">
+                    <button onClick={() => { setGradeFilter(null); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 font-medium">All Grades</button>
+                    {availableGrades.map(grade => (
+                      <button key={grade as string} onClick={() => { setGradeFilter(grade as string); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">{grade as string}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Types Dropdown */}
+              <div className="relative">
+                <button 
+                  onClick={() => setActiveDropdown(activeDropdown === "types" ? null : "types")}
+                  className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-colors ${typeFilter ? 'bg-brand/10 border-brand text-brand' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <FileImage className="w-4 h-4" />
+                  {typeFilter || "Types"}
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </button>
+                {activeDropdown === "types" && (
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-30 max-h-60 overflow-y-auto">
+                    <button onClick={() => { setTypeFilter(null); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 font-medium">All Types</button>
+                    {availableTypes.map(type => (
+                      <button key={type as string} onClick={() => { setTypeFilter(type as string); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">{type as string}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Keywords Dropdown */}
+              <div className="relative">
+                <button 
+                  onClick={() => setActiveDropdown(activeDropdown === "keywords" ? null : "keywords")}
+                  className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-colors ${keywordFilter ? 'bg-brand/10 border-brand text-brand' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <Tag className="w-4 h-4" />
+                  {keywordFilter || "Keywords"}
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </button>
+                {activeDropdown === "keywords" && (
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-30 max-h-60 overflow-y-auto">
+                    <button onClick={() => { setKeywordFilter(null); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 font-medium">All Keywords</button>
+                    {availableKeywords.map(kw => (
+                      <button key={kw as string} onClick={() => { setKeywordFilter(kw as string); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">{kw as string}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Premium Filter */}
+              <button 
+                onClick={() => setPremiumFilter(premiumFilter === "Premium" ? null : "Premium")}
+                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-colors ${premiumFilter === "Premium" ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+              >
+                <Sparkles className={`w-4 h-4 ${premiumFilter === "Premium" ? 'text-amber-500' : 'text-gray-400'}`} />
+                Premium
+              </button>
+            </div>
           </div>
         </div>
 

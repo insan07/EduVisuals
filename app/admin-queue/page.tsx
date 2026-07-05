@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Loader2, CheckCircle, XCircle, FileImage, Shield } from "lucide-react";
+import {  CheckCircle, XCircle, FileImage, Shield } from "lucide-react";
 import Link from "next/link";
+import { PremiumLoader } from "@/components/PremiumLoader";
 
 export default function AdminReviewQueue() {
   const router = useRouter();
@@ -97,7 +98,7 @@ export default function AdminReviewQueue() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-brand-surface">
-        <Loader2 className="w-8 h-8 text-brand animate-spin" />
+        <PremiumLoader className="w-8 h-8 text-brand animate-spin" />
       </div>
     );
   }

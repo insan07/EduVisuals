@@ -110,16 +110,13 @@ export default function DiscoveryHub() {
   }
 
   return (
-    <div className="flex flex-col gap-8 mt-2 pb-8">
+    <div className="flex flex-col gap-12 md:gap-16 mt-6 pb-12">
       
       {/* RECENTLY SEEN */}
       {recentlySeen.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg md:text-xl font-bold text-[#00393c] flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e8f5f6] to-[#d0ecee] flex items-center justify-center shadow-sm border border-[#073238]/10">
-                <Clock className="w-4 h-4 text-[#073238]" />
-              </div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
               Recently Viewed
             </h2>
           </div>
@@ -157,11 +154,8 @@ export default function DiscoveryHub() {
       {/* SUGGESTIONS FOR YOU */}
       {suggestions.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg md:text-xl font-bold text-[#00393c] flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e8f5f6] to-[#d0ecee] flex items-center justify-center shadow-sm border border-[#073238]/10">
-                <Sparkles className="w-4 h-4 text-[#073238]" />
-              </div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
               Suggestions for You
             </h2>
           </div>
@@ -191,56 +185,24 @@ export default function DiscoveryHub() {
         </section>
       )}
 
-      {/* POPULAR COLLECTIONS */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg md:text-xl font-bold text-[#00393c] flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e8f5f6] to-[#d0ecee] flex items-center justify-center shadow-sm border border-[#073238]/10">
-              <Folder className="w-4 h-4 text-[#073238]" />
-            </div>
-            Popular Collections
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { id: 1, title: "Biology Mind Maps", count: "1,240 Visuals", image: "/mindmap.png", link: "/visuals?q=biology" },
-            { id: 2, title: "Kids Worksheets", count: "850 Visuals", image: "/kids.png", link: "/visuals?q=kids" },
-            { id: 3, title: "Physics Cheat Sheets", count: "420 Visuals", image: "/cheatsheet.png", link: "/visuals?q=physics" },
-          ].map(col => (
-            <Link href={col.link} key={col.id} className="group relative h-40 w-full rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 block border border-gray-200">
-              <img src={col.image} alt={col.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700 ease-out" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent transition-opacity duration-300 group-hover:opacity-90"></div>
-              <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col items-start justify-end z-10">
-                <span className="text-[10px] font-bold text-white uppercase tracking-wider mb-1 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 shadow-sm">{col.count}</span>
-                <h3 className="text-lg font-bold text-white tracking-tight">{col.title}</h3>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
 
       {/* YOUR COLLECTIONS */}
       {collections.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg md:text-xl font-bold text-[#00393c] flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e8f5f6] to-[#d0ecee] flex items-center justify-center shadow-sm border border-[#073238]/10">
-                <Folder className="w-4 h-4 text-[#073238]" />
-              </div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
               Your Collections
             </h2>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {collections.map(col => (
               <Link 
                 key={col.id} 
                 href={`/collections/${col.id}`}
-                className="group bg-white border border-gray-100 p-3 rounded-xl shadow-sm hover:shadow-md hover:border-[#073238]/30 transition-all flex flex-col items-center text-center gap-2"
+                className="group flex items-center gap-3 bg-white border border-gray-200 px-4 py-4 rounded-2xl shadow-sm hover:shadow-md hover:border-brand/40 transition-all w-full"
               >
-                <div className="w-12 h-12 bg-[#f8f9fa] group-hover:bg-[#e8f5f6] rounded-full flex items-center justify-center transition-colors">
-                  <Folder className="w-6 h-6 text-[#073238]" />
-                </div>
-                <h3 className="font-bold text-[#00393c] text-xs line-clamp-1">{col.name}</h3>
+                <Folder className="w-5 h-5 text-gray-400 group-hover:text-brand transition-colors" />
+                <h3 className="font-bold text-gray-800 text-sm line-clamp-1">{col.name}</h3>
               </Link>
             ))}
           </div>

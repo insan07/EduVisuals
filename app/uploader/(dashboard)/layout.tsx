@@ -90,12 +90,12 @@ export default function UploaderDashboardLayout({
           </Link>
 
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center shadow-sm">
+            <div className="w-10 h-10 rounded-md bg-brand flex items-center justify-center">
               <Upload className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-brand leading-none">Uploader</h2>
-              <span className="text-[10px] font-bold text-brand-muted uppercase tracking-wider">Portal</span>
+              <h2 className="text-xl font-extrabold text-brand leading-none">Uploader</h2>
+              <span className="text-[10px] font-bold text-brand-faint uppercase tracking-wider">Portal</span>
             </div>
           </div>
 
@@ -106,10 +106,10 @@ export default function UploaderDashboardLayout({
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${
+                  className={`flex items-center gap-3 px-4 py-3 font-semibold text-sm transition-colors ${
                     isActive
-                      ? "bg-brand text-white shadow-sm"
-                      : "text-brand-muted hover:bg-[#f3f3f3] hover:text-brand"
+                      ? "border-l-4 border-brand bg-[#f8f9fa] text-brand"
+                      : "border-l-4 border-transparent text-brand-faint hover:bg-[#f8f9fa] hover:text-brand"
                   }`}
                 >
                   <item.icon className="w-5 h-5" />
@@ -122,9 +122,9 @@ export default function UploaderDashboardLayout({
           <div className="mt-auto pt-6 border-t border-brand-border flex flex-col gap-2">
             <Link 
               href="/"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-brand hover:bg-brand/5 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 font-semibold text-sm text-brand-faint hover:bg-[#f8f9fa] hover:text-brand transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
               Back to Learnpik
             </Link>
           </div>

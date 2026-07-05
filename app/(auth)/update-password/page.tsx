@@ -6,6 +6,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import Link from "next/link";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import Toast from "@/components/Toast";
+import { PremiumLoader } from "@/components/PremiumLoader";
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
@@ -111,7 +112,7 @@ export default function UpdatePasswordPage() {
             disabled={isLoading || (!isSupabaseConfigured() && false)}
             className="w-full bg-brand hover:bg-brand text-white font-black text-xs py-3.5 rounded-xl transition-all shadow-md shadow-black/5 mt-2 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isLoading && <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />}
+            {isLoading && <PremiumLoader />}
             Update Password
           </button>
         </form>

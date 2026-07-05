@@ -26,6 +26,7 @@ import {
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { GRADES, SUBJECTS, TYPES, SYLLABUSES, MEDIUMS } from "@/lib/constants";
 import EditVisualModal from "@/components/EditVisualModal";
+import { PremiumLoader } from "@/components/PremiumLoader";
 
 type UploadStatus = "pending_review" | "approved" | "rejected" | "draft";
 
@@ -526,7 +527,7 @@ export default function ContributorUploadPortal() {
     return (
       <div className="min-h-screen bg-brand-surface flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
+          <PremiumLoader />
           <p className="text-xs text-brand-muted font-bold">Verifying permissions...</p>
         </div>
       </div>
@@ -546,7 +547,7 @@ export default function ContributorUploadPortal() {
 
         {/* Header */}
         <div className="mb-8">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-brand-border shadow-sm mb-4">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-brand-surface rounded-md text-[10px] font-bold uppercase tracking-wider text-brand-faint mb-3 border border-brand-border">
             <Sparkles className="w-3 h-3 text-brand" />
             <span className="text-[10px] font-black uppercase text-brand tracking-wider">Contributor Portal</span>
           </div>
@@ -557,10 +558,10 @@ export default function ContributorUploadPortal() {
           </p>
         </div>
 
-        {/* ====== UPLOAD FORM ====== */}
-          <div className="bg-white border border-brand-border rounded-3xl shadow-sm overflow-hidden">
+        {/* Main Upload Form Container */}
+          <div className="bg-white border border-brand-border rounded-xl shadow-sm overflow-hidden">
 
-            {/* Progress Steps */}
+            {/* Steps Header */}
             <div className="flex border-b border-brand-border px-6 pt-5 pb-0">
               {[
                 { num: 1, label: "Metadata" },
@@ -578,7 +579,7 @@ export default function ContributorUploadPortal() {
                       : "border-transparent text-brand-faint"
                   }`}
                 >
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                  <span className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-black ${
                     step > num ? "bg-emerald-500 text-white" : step === num ? "bg-brand text-white" : "bg-[#f3f3f3] text-[rgba(0,57,60,0.5)]"
                   }`}>
                     {step > num ? "✓" : num}
@@ -593,9 +594,9 @@ export default function ContributorUploadPortal() {
               {/* === STEP 1: METADATA === */}
               {step === 1 && (
                 <div className="flex flex-col gap-5">
-                  {/* AI Smart Paste Section */}
-                  <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 flex flex-col gap-2">
-                    <label className="flex items-center gap-2 text-xs font-bold text-indigo-700 uppercase tracking-wide">
+                  
+                  <div className="bg-brand-surface border border-brand-border rounded-xl p-4 flex flex-col gap-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-brand uppercase tracking-wide">
                       <Sparkles className="w-3.5 h-3.5" />
                       Auto-Fill with AI
                     </label>
@@ -606,7 +607,7 @@ export default function ContributorUploadPortal() {
                         handleSmartPaste(e.target.value);
                       }}
                       placeholder="Paste AI generated text here (Title:, Description:, Syllabus:, Tags:)..."
-                      className="w-full bg-white border border-indigo-200 text-brand placeholder:text-indigo-300 text-xs px-4 py-3 rounded-lg outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all resize-none min-h-[80px]"
+                      className="w-full bg-white border border-brand-border text-brand placeholder:text-brand-faint text-xs px-4 py-3 rounded-lg outline-none focus:border-brand transition-all resize-none min-h-[80px]"
                     />
                   </div>
 
@@ -663,7 +664,7 @@ export default function ContributorUploadPortal() {
                             key={g}
                             type="button"
                             onClick={() => toggleGrade(g)}
-                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                            className={`px-3 py-1.5 rounded border transition-all cursor-pointer ${
                               selectedGrades.includes(g)
                                 ? "bg-brand text-white border-brand"
                                 : "bg-[#f3f3f3] text-[rgba(0,57,60,0.7)] border-brand-border hover:border-brand/40"
@@ -694,7 +695,7 @@ export default function ContributorUploadPortal() {
                       {tags.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-1">
                           {tags.map((tag) => (
-                            <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#f3f3f3] border border-brand-border rounded-full text-[10px] font-bold text-brand">
+                            <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#f3f3f3] border border-brand-border rounded text-[10px] font-bold text-brand">
                               {tag}
                               <button type="button" onClick={() => removeTag(tag)} className="text-[rgba(0,57,60,0.5)] hover:text-red-500 cursor-pointer"><X className="w-3 h-3" /></button>
                             </span>
@@ -708,9 +709,9 @@ export default function ContributorUploadPortal() {
                       <label className="flex items-center gap-3 cursor-pointer">
                         <div
                           onClick={() => setIsPremium(!isPremium)}
-                          className={`relative w-10 h-5 rounded-full transition-all cursor-pointer ${isPremium ? "bg-brand" : "bg-[rgba(0,57,60,0.15)]"}`}
+                          className={`relative w-10 h-5 rounded transition-all cursor-pointer ${isPremium ? "bg-brand" : "bg-[rgba(0,57,60,0.15)]"}`}
                         >
-                          <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isPremium ? "translate-x-5" : ""}`} />
+                          <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-sm bg-white shadow transition-transform ${isPremium ? "translate-x-5" : ""}`} />
                         </div>
                         <div className="flex flex-col">
                           <span className="text-xs font-black text-brand flex items-center gap-1.5">
@@ -741,7 +742,7 @@ export default function ContributorUploadPortal() {
                     <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Main Visual File(s) * (Up to 5 images, max 20MB each)</label>
                     <div
                       onClick={() => fileInputRef.current?.click()}
-                      className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
+                      className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
                         selectedFiles.length > 0 ? "border-brand bg-brand/5" : "border-brand-border hover:border-brand/50 hover:bg-brand/5"
                       }`}
                     >
@@ -749,11 +750,11 @@ export default function ContributorUploadPortal() {
                         <div className="flex flex-wrap items-center justify-center gap-4">
                           {selectedFiles.map((f, i) => (
                             <div key={i} className="relative group">
-                              <img src={filePreviews[i]} alt="Preview" className="h-24 w-24 md:h-32 md:w-32 rounded-xl object-cover border border-brand-border bg-white shadow-sm" />
+                              <img src={filePreviews[i]} alt="Preview" className="h-24 w-24 md:h-32 md:w-32 rounded border border-brand-border bg-white shadow-sm" />
                               <button 
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); removeSelectedFile(i); }}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-md hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded p-1.5 shadow-md hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
                                 title="Remove file"
                               >
                                 <X size={14} />
@@ -761,7 +762,7 @@ export default function ContributorUploadPortal() {
                             </div>
                           ))}
                           {selectedFiles.length < 5 && (
-                            <div className="h-24 w-24 md:h-32 md:w-32 rounded-xl border-2 border-dashed border-brand-border flex items-center justify-center bg-white hover:bg-gray-50 transition-colors">
+                            <div className="h-24 w-24 md:h-32 md:w-32 rounded border-2 border-dashed border-brand-border flex items-center justify-center bg-white hover:bg-gray-50 transition-colors">
                               <Plus className="w-8 h-8 text-[rgba(0,57,60,0.3)]" />
                             </div>
                           )}
@@ -789,12 +790,12 @@ export default function ContributorUploadPortal() {
                     <label className="text-[10px] font-black text-brand-muted uppercase tracking-wide">Thumbnail Image (optional — PNG, JPG, 800×600 recommended)</label>
                     <div
                       onClick={() => document.getElementById("thumb-input")?.click()}
-                      className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                      className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
                         thumbnailFile ? "border-emerald-400 bg-emerald-50/30" : "border-brand-border hover:border-brand/50"
                       }`}
                     >
                       {thumbnailPreview ? (
-                        <img src={thumbnailPreview} alt="Thumbnail Preview" className="max-h-28 mx-auto rounded-lg object-cover" />
+                        <img src={thumbnailPreview} alt="Thumbnail Preview" className="max-h-28 mx-auto rounded object-cover" />
                       ) : (
                         <div className="flex flex-col items-center gap-2">
                           <FileImage className="w-8 h-8 text-[rgba(0,57,60,0.3)]" />
@@ -823,7 +824,7 @@ export default function ContributorUploadPortal() {
               {/* === STEP 3: REVIEW & SUBMIT === */}
               {step === 3 && (
                 <div className="flex flex-col gap-5">
-                  <div className="bg-[#f3f3f3] rounded-2xl p-5 flex flex-col gap-3 text-xs font-semibold text-brand">
+                  <div className="bg-[#f3f3f3] rounded-xl p-5 flex flex-col gap-3 text-xs font-semibold text-brand">
                     <h3 className="font-black text-sm text-brand border-b border-brand-border pb-3 mb-1">Submission Summary</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <div><span className="text-[rgba(0,57,60,0.5)] text-[10px] uppercase font-bold">Title</span><p className="font-black mt-0.5">{title}</p></div>
@@ -837,7 +838,7 @@ export default function ContributorUploadPortal() {
                     </div>
                     {tags.length > 0 && (
                       <div><span className="text-[rgba(0,57,60,0.5)] text-[10px] uppercase font-bold">Tags</span>
-                        <div className="flex flex-wrap gap-1 mt-1">{tags.map((t) => <span key={t} className="px-2 py-0.5 bg-white rounded-full border border-brand-border text-[10px] font-bold">{t}</span>)}</div>
+                        <div className="flex flex-wrap gap-1 mt-1">{tags.map((t) => <span key={t} className="px-2 py-0.5 bg-white rounded border border-brand-border text-[10px] font-bold">{t}</span>)}</div>
                       </div>
                     )}
                   </div>
@@ -883,13 +884,18 @@ export default function ContributorUploadPortal() {
                     </button>
                     <button
                       onClick={handleSubmit}
-                      disabled={uploading || uploadSuccess !== null}
-                      className="flex-1 bg-brand hover:bg-brand disabled:opacity-50 text-white font-black text-xs py-3 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer"
+                      disabled={isSubmitting}
+                      className="bg-brand text-white font-bold px-8 py-3.5 rounded-lg hover:bg-brand/90 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                      {uploading ? (
-                        <><div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />Uploading...</>
+                      {isSubmitting ? (
+                        <>
+                          <PremiumLoader className="text-white" />
+                        </>
                       ) : (
-                        <><Upload className="w-3.5 h-3.5" />Submit for Review</>
+                        <>
+                          <Upload className="w-5 h-5" />
+                          Publish Visual
+                        </>
                       )}
                     </button>
                   </div>

@@ -10,7 +10,7 @@ import { GoogleLogin } from '@react-oauth/google';
 export default function AuthModal() {
   const { isOpen, close, triggerSuccess, intendedDownload, nextUrl, initialTab } = useAuthModal();
   
-  const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
+  const [activeTab, setActiveTab] = useState<"signin" | "signup" | "forgot">("signin");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -217,9 +217,10 @@ export default function AuthModal() {
       handleAuthSuccess(signUpEmail, selectedRole, "Free");
     }
   };
-  const handleForgotPassword = async () => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!signInEmail) {
-      triggerToast("Please enter your email address first.", true);
+      triggerToast("Please enter your email address.", true);
       return;
     }
     
@@ -268,11 +269,10 @@ export default function AuthModal() {
                 ? "Sign in to Download" 
                 : activeTab === "signin" 
                   ? "Welcome Back" 
-                  : "Create an Account"}
+                  : activeTab === "forgot"
+                    ? "Reset Password"
+                    : "Create an Account"}
             </h2>
-            <p className="text-xs text-brand-muted font-semibold mt-1">
-              Join 50,000+ Global students. It&apos;s free.
-            </p>
             {intendedDownload && (
               <span className="text-[10px] text-brand font-black bg-[#f3f3f3] border border-brand-border px-2 py-0.5 rounded-full mt-2 flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-brand" />
@@ -282,7 +282,8 @@ export default function AuthModal() {
           </div>
 
           {/* TABS selector */}
-          <div className="flex border-b border-brand-border mb-6">
+          {activeTab !== "forgot" && (
+            <div className="flex border-b border-brand-border mb-6">
             <button
               onClick={() => setActiveTab("signin")}
               className={`flex-1 pb-3 text-xs font-black uppercase tracking-wider text-center transition-all ${
@@ -304,12 +305,16 @@ export default function AuthModal() {
               Create Account
             </button>
           </div>
+          )}
 
           {/* Loader Overlay */}
           {isLoading && (
-            <div className="absolute inset-0 bg-white/90 z-30 flex flex-col items-center justify-center rounded-[20px]">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
-              <p className="text-xs text-brand font-bold mt-4">Authenticating session...</p>
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-30 flex items-center justify-center rounded-[24px]">
+              <div className="relative flex items-center justify-center w-12 h-12">
+                <div className="absolute inset-0 rounded-full border-[3px] border-brand/10"></div>
+                <div className="absolute inset-0 rounded-full border-[3px] border-brand border-t-transparent animate-spin"></div>
+                <div className="absolute inset-2 bg-brand rounded-full animate-pulse opacity-10"></div>
+              </div>
             </div>
           )}
 
@@ -359,7 +364,7 @@ export default function AuthModal() {
                   </label>
                   <button
                     type="button"
-                    onClick={handleForgotPassword}
+                    onClick={() => setActiveTab("forgot")}
                     className="text-[10px] font-bold text-brand hover:underline"
                   >
                     Forgot password?
@@ -513,6 +518,48 @@ export default function AuthModal() {
 
         </div>
 
+        {/* ================= FORGOT PASSWORD TAB ================= */}
+        {activeTab === "forgot" && (
+          <form onSubmit={handleForgotPassword} className="flex flex-col gap-4 mt-6">
+            <p className="text-xs text-brand-muted font-medium text-center mb-2 leading-relaxed">
+              Enter the email address associated with your account, and we'll send you a link to reset your password.
+            </p>
+            
+            {/* Email */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-brand-muted uppercase tracking-wide">
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                placeholder="name@example.com"
+                value={signInEmail}
+                onChange={(e) => setSignInEmail(e.target.value)}
+                className="w-full bg-[#f3f3f3] border border-brand-border text-brand placeholder:text-[rgba(0,57,60,0.5)] text-xs px-3.5 py-3 rounded-xl outline-none focus:border-brand focus:ring-2 focus:ring-[#073238]/10 transition-all"
+              />
+            </div>
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              className="w-full bg-brand hover:bg-brand text-white font-black text-xs py-3.5 rounded-xl transition-all shadow-md shadow-black/5 mt-2"
+            >
+              Send Reset Link
+            </button>
+
+            <div className="text-center mt-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab("signin")}
+                className="text-xs text-brand font-black hover:underline flex items-center justify-center gap-1 mx-auto"
+              >
+                ← Back to Sign In
+              </button>
+            </div>
+          </form>
+        )}
+
         {/* Fine print footer */}
         <p className="text-[9px] text-brand-muted/60 text-center leading-normal mt-6 sm:mt-8 select-none">
           By signing in, you agree to our <br />
@@ -524,7 +571,7 @@ export default function AuthModal() {
 
       {/* Development-only Toast notification within auth modal */}
       {showToast && (
-        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 border font-bold text-xs px-5 py-3 rounded-full shadow-lg flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom duration-300 ${
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 border font-bold text-xs px-5 py-3 rounded-full shadow-lg flex items-center gap-1.5 animate-in fade-in slide-in-from-top duration-300 ${
           toastIsError
             ? "bg-red-600 border-red-700 text-white"
             : "bg-brand border-brand-border text-white"

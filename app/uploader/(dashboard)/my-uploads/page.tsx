@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Image as ImageIcon, Search, Filter, Loader2, MoreVertical, Edit2, Trash2, Eye, Download } from "lucide-react";
+import { Image as ImageIcon, Search, Filter , MoreVertical, Edit2, Trash2, Eye, Download } from "lucide-react";
 import Link from "next/link";
+import { PremiumLoader } from "@/components/PremiumLoader";
 
 export default function MyUploadsPage() {
   const [loading, setLoading] = useState(true);
@@ -39,7 +40,7 @@ export default function MyUploadsPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 text-brand animate-spin" />
+        <PremiumLoader className="w-8 h-8 text-brand animate-spin" />
       </div>
     );
   }
@@ -53,14 +54,14 @@ export default function MyUploadsPage() {
         </div>
         <Link 
           href="/uploader/upload" 
-          className="bg-brand text-white font-bold px-6 py-3 rounded-xl hover:bg-[#0a4a52] transition-colors shadow-sm flex items-center gap-2"
+          className="bg-brand text-white font-bold px-6 py-2.5 rounded-lg hover:bg-[#0a4a52] transition-colors shadow-sm flex items-center gap-2 text-sm"
         >
           <ImageIcon className="w-4 h-4" /> Upload New
         </Link>
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white p-4 rounded-2xl border border-brand-border shadow-sm mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="bg-white p-4 rounded-xl border border-brand-border shadow-sm mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input 
@@ -68,7 +69,7 @@ export default function MyUploadsPage() {
             placeholder="Search your uploads..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[#f8f9fa] border border-transparent focus:border-brand/20 rounded-xl outline-none text-sm font-medium text-brand transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-brand-surface border border-brand-border focus:border-brand/50 rounded-lg outline-none text-sm font-medium text-brand transition-all"
           />
         </div>
         
@@ -77,7 +78,7 @@ export default function MyUploadsPage() {
           <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-[#f8f9fa] border border-transparent focus:border-brand/20 rounded-xl px-4 py-2 outline-none text-sm font-bold text-brand cursor-pointer w-full sm:w-auto"
+            className="bg-brand-surface border border-brand-border focus:border-brand/50 rounded-lg px-3 py-2 outline-none text-sm font-semibold text-brand cursor-pointer w-full sm:w-auto"
           >
             <option value="all">All Statuses</option>
             <option value="approved">Approved</option>
@@ -89,7 +90,7 @@ export default function MyUploadsPage() {
       </div>
 
       {/* Uploads Grid/List */}
-      <div className="bg-white rounded-3xl border border-brand-border shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-brand-border shadow-sm overflow-hidden">
         {filteredUploads.length === 0 ? (
           <div className="p-16 text-center flex flex-col items-center">
             <ImageIcon className="w-12 h-12 text-gray-300 mb-4" />
@@ -104,20 +105,20 @@ export default function MyUploadsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#f8f9fa] text-xs uppercase tracking-wider text-brand-muted font-bold border-b border-gray-100">
-                  <th className="p-4 pl-6 font-bold w-1/2">Visual Details</th>
+                <tr className="bg-brand-surface/50 text-[10px] uppercase tracking-wider text-brand-faint font-bold border-b border-brand-border">
+                  <th className="p-4 pl-6 w-1/2">Visual Details</th>
                   <th className="p-4 font-bold">Status</th>
                   <th className="p-4 font-bold text-center">Tier</th>
                   <th className="p-4 font-bold text-center">Stats</th>
                   <th className="p-4 pr-6 font-bold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-brand-border/50">
                 {filteredUploads.map((visual) => (
-                  <tr key={visual.id} className="hover:bg-gray-50 transition-colors group">
+                  <tr key={visual.id} className="hover:bg-brand-surface/30 transition-colors group">
                     <td className="p-4 pl-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-16 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 flex-shrink-0">
+                        <div className="w-16 h-12 rounded bg-brand-surface overflow-hidden border border-brand-border flex-shrink-0">
                           <img src={visual.thumbnail_url || visual.file_url} alt="" className="w-full h-full object-cover" />
                         </div>
                         <div className="flex flex-col min-w-0">
@@ -129,20 +130,20 @@ export default function MyUploadsPage() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex px-2 py-1 text-[10px] font-black uppercase tracking-wider rounded-full ${
-                        visual.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
-                        visual.status === 'pending_review' ? 'bg-amber-100 text-amber-700' :
-                        visual.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                        'bg-gray-100 text-gray-700'
+                      <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${
+                        visual.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                        visual.status === 'pending_review' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                        visual.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-100' :
+                        'bg-gray-50 text-gray-700 border-gray-200'
                       }`}>
                         {visual.status.replace('_', ' ')}
                       </span>
                     </td>
                     <td className="p-4 text-center">
                       {visual.is_premium ? (
-                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">Premium</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded">Premium</span>
                       ) : (
-                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">Free</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-brand-faint bg-brand-surface border border-brand-border px-2 py-0.5 rounded">Free</span>
                       )}
                     </td>
                     <td className="p-4 text-center">

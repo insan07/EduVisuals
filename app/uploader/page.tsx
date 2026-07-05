@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Loader2 } from "lucide-react";
+import { PremiumLoader } from "@/components/PremiumLoader";
 
 export default function UploaderRouterPage() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function UploaderRouterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-surface pt-20">
       <div className="flex flex-col items-center gap-4">
-        <Loader2 className="w-8 h-8 text-brand animate-spin" />
+        <PremiumLoader className="w-8 h-8 text-brand animate-spin" />
         <p className="text-brand font-bold">Checking uploader status...</p>
       </div>
     </div>

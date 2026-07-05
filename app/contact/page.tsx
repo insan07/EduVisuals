@@ -1,206 +1,168 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Sparkles, Mail, Phone, MapPin, Send, ShieldCheck, MessageSquare, Clock, Globe } from "lucide-react";
+import React, { useState } from "react";
+import { Mail, MapPin, MessageSquare, Send } from "lucide-react";
+import { PremiumLoader } from "@/components/PremiumLoader";
 
 export default function ContactPage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState("General Support");
-  const [message, setMessage] = useState("");
-  const [sent, setSent] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const sub = params.get("subject");
-      if (sub === "Billing") {
-        setSubject("Billing / Premium Inquiry");
-      }
-    }
-  }, []);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !message) return;
-    
     setIsSubmitting(true);
-    // Simulate network request
+    
+    // Simulate API call
     setTimeout(() => {
-      setSent(true);
       setIsSubmitting(false);
-      setTimeout(() => {
-        setName("");
-        setEmail("");
-        setMessage("");
-        setSent(false);
-      }, 3000); // Reset form after 3 seconds showing success
-    }, 1500);
+      setIsSubmitted(true);
+      setFormData({ name: "", email: "", subject: "", message: "" });
+      
+      // Reset success message after 5 seconds
+      setTimeout(() => setIsSubmitted(false), 5000);
+    }, 1200);
   };
 
   return (
-    <div className="min-h-screen bg-brand-surface selection:bg-brand selection:text-white flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-brand-surface text-brand pt-20 pb-24 px-4 sm:px-6 lg:px-8 font-sans">
       
-      {/* ── Premium Background Elements ── */}
-      <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-[#073238] to-brand-surface z-0" />
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[600px] bg-teal-500/20 blur-[120px] rounded-full pointer-events-none z-0" />
-      <div className="absolute top-[10%] right-[-10%] w-[40%] h-[500px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none z-0" />
-
-      <div className="relative z-10 pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full flex-grow">
-        
-        {/* HEADER */}
-        <div className="text-center mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <div className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-6 shadow-sm">
-            <Sparkles className="w-4 h-4 text-emerald-300" />
-            <span className="text-xs font-black uppercase text-white tracking-widest">
-              We're Here to Help
-            </span>
-          </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-tight mb-4 drop-shadow-md">
-            Let's Start a <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-200 to-emerald-200">Conversation</span>
+      <div className="max-w-5xl mx-auto mt-8">
+        <div className="text-left mb-16">
+          <h1 className="text-4xl sm:text-5xl font-black text-brand tracking-tight leading-none mb-6">
+            Get in touch
           </h1>
-          <p className="text-sm sm:text-base md:text-lg text-white/80 max-w-2xl mx-auto font-medium leading-relaxed">
-            Whether you have a question about premium features, need technical support, or want to partner with us, our global team is ready to assist you.
+          <p className="text-lg text-brand-faint font-medium max-w-xl">
+            Have a question, feedback, or need support with your account? We're here to help. Reach out to our team below.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 bg-white rounded-3xl border border-brand-border shadow-sm overflow-hidden">
           
-          {/* LEFT COLUMN: Contact Details */}
-          <div className="lg:col-span-5 flex flex-col gap-6 animate-in fade-in slide-in-from-left-8 duration-700 delay-100">
+          {/* Left Column - Contact Info */}
+          <div className="lg:col-span-2 bg-[#f8f9fa] p-8 md:p-12 border-b lg:border-b-0 lg:border-r border-brand-border flex flex-col">
+            <h3 className="text-2xl font-extrabold mb-10">Contact Information</h3>
             
-            <div className="bg-white/80 backdrop-blur-xl border border-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg transition-all duration-300 group">
-              <div className="w-14 h-14 rounded-2xl bg-brand/5 flex items-center justify-center text-brand mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Mail className="w-6 h-6" />
+            <div className="space-y-10 flex-grow">
+              <div>
+                <h4 className="font-bold text-xs flex items-center gap-2 mb-2 text-brand-faint uppercase tracking-wider"><Mail className="w-4 h-4 text-emerald-600" /> General Inquiries</h4>
+                <a href="mailto:hello@learnpik.com" className="font-bold text-lg hover:text-emerald-600 transition-colors">hello@learnpik.com</a>
               </div>
-              <h3 className="text-sm font-bold text-brand-faint uppercase tracking-wider mb-1">Email Us</h3>
-              <p className="text-xl font-black text-brand mb-2">info@learnpik.com</p>
-              <p className="text-sm text-brand-muted font-medium">Our friendly team is here to help you.</p>
-            </div>
 
-            <div className="bg-white/80 backdrop-blur-xl border border-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg transition-all duration-300 group">
-              <div className="w-14 h-14 rounded-2xl bg-brand/5 flex items-center justify-center text-brand mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Globe className="w-6 h-6" />
+              <div>
+                <h4 className="font-bold text-xs flex items-center gap-2 mb-2 text-brand-faint uppercase tracking-wider"><MessageSquare className="w-4 h-4 text-blue-600" /> Support</h4>
+                <a href="mailto:support@learnpik.com" className="font-bold text-lg hover:text-blue-600 transition-colors">support@learnpik.com</a>
               </div>
-              <h3 className="text-sm font-bold text-brand-faint uppercase tracking-wider mb-1">Global Headquarters</h3>
-              <p className="text-xl font-black text-brand mb-2">Sri Lanka</p>
-              <p className="text-sm text-brand-muted font-medium">Available for international inquiries.</p>
-            </div>
 
-            <div className="bg-gradient-to-br from-[#073238] to-[#0a4a52] rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
-              <div className="absolute -right-4 -bottom-4 opacity-10">
-                <MessageSquare className="w-32 h-32" />
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-emerald-300 mb-6">
-                  <Clock className="w-6 h-6" />
-                </div>
-                <h3 className="text-sm font-bold text-white/60 uppercase tracking-wider mb-1">Response Time</h3>
-                <p className="text-xl font-black text-white mb-2">Under 24 Hours</p>
-                <p className="text-sm text-white/80 font-medium">We pride ourselves on rapid, helpful support.</p>
+              <div>
+                <h4 className="font-bold text-xs flex items-center gap-2 mb-2 text-brand-faint uppercase tracking-wider"><MapPin className="w-4 h-4 text-amber-600" /> Office</h4>
+                <p className="font-bold text-base leading-snug">Global Remote<br/>Colombo, Sri Lanka</p>
               </div>
             </div>
 
+            <div className="mt-12 pt-8 border-t border-brand-border/60">
+              <p className="text-xs font-medium text-brand-faint leading-relaxed">
+                We aim to respond to all inquiries within 1-2 business days. For urgent matters regarding Premium accounts, please indicate "URGENT" in your subject line.
+              </p>
+            </div>
           </div>
 
-          {/* RIGHT COLUMN: Contact Form */}
-          <div className="lg:col-span-7 animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
-            <div className="bg-white rounded-[2.5rem] p-8 sm:p-10 lg:p-12 shadow-xl border border-brand/5 relative overflow-hidden">
-              
-              {sent ? (
-                <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-center p-8 animate-in zoom-in duration-300">
-                  <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
-                    <Send className="w-10 h-10 text-emerald-600 ml-1" />
-                  </div>
-                  <h3 className="text-2xl font-black text-brand mb-3">Message Sent!</h3>
-                  <p className="text-brand-muted font-medium max-w-sm">
-                    Thank you for reaching out. Our support team will review your message and get back to you shortly.
-                  </p>
+          {/* Right Column - Form */}
+          <div className="lg:col-span-3 p-8 md:p-12">
+            <h3 className="text-2xl font-extrabold mb-8">Send us a message</h3>
+            
+            {isSubmitted ? (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-8 text-center flex flex-col items-center justify-center h-[350px]">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+                  <Send className="w-7 h-7" />
                 </div>
-              ) : null}
-
-              <div className="mb-8">
-                <h2 className="text-2xl font-black text-brand mb-2">Send a Message</h2>
-                <p className="text-brand-muted font-medium text-sm">Fill out the form below and we'll get back to you as soon as possible.</p>
+                <h4 className="text-xl font-extrabold text-emerald-800 mb-2">Message Sent!</h4>
+                <p className="text-sm font-medium text-emerald-700 max-w-xs mx-auto">
+                  Thank you for reaching out. A member of our team will get back to you shortly.
+                </p>
               </div>
-
-              <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                <div className="grid sm:grid-cols-2 gap-6">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-brand ml-1">Your Name</label>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-brand-faint ml-1">Full Name</label>
                     <input 
                       type="text" 
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="John Doe"
-                      className="bg-[#f8f9fa] border-2 border-transparent focus:border-brand/20 focus:bg-white rounded-2xl px-5 py-4 text-brand font-medium outline-none transition-all w-full placeholder:text-brand-faint"
+                      id="name"
+                      name="name"
                       required
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="w-full bg-[#f4f4f4] border-transparent focus:bg-white focus:border-brand-border focus:ring-2 focus:ring-brand/5 rounded-xl px-4 py-3.5 text-sm font-medium outline-none transition-all placeholder:text-gray-400"
+                      placeholder="Jane Doe"
                     />
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-brand ml-1">Email Address</label>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-brand-faint ml-1">Email Address</label>
                     <input 
                       type="email" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="john@example.com"
-                      className="bg-[#f8f9fa] border-2 border-transparent focus:border-brand/20 focus:bg-white rounded-2xl px-5 py-4 text-brand font-medium outline-none transition-all w-full placeholder:text-brand-faint"
+                      id="email"
+                      name="email"
                       required
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="w-full bg-[#f4f4f4] border-transparent focus:bg-white focus:border-brand-border focus:ring-2 focus:ring-brand/5 rounded-xl px-4 py-3.5 text-sm font-medium outline-none transition-all placeholder:text-gray-400"
+                      placeholder="jane@example.com"
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold text-brand ml-1">Subject</label>
-                  <select 
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    className="bg-[#f8f9fa] border-2 border-transparent focus:border-brand/20 focus:bg-white rounded-2xl px-5 py-4 text-brand font-medium outline-none transition-all w-full appearance-none cursor-pointer"
-                  >
-                    <option value="General Support">General Support</option>
-                    <option value="Billing / Premium Inquiry">Billing & Premium</option>
-                    <option value="Technical Issue">Technical Issue</option>
-                    <option value="Feedback / Suggestion">Feedback & Suggestions</option>
-                    <option value="Partnership">Partnership Inquiry</option>
-                  </select>
+                <div className="space-y-2">
+                  <label htmlFor="subject" className="text-xs font-bold uppercase tracking-wider text-brand-faint ml-1">Subject</label>
+                  <input 
+                    type="text" 
+                    id="subject"
+                    name="subject"
+                    required
+                    value={formData.subject}
+                    onChange={handleChange}
+                    className="w-full bg-[#f4f4f4] border-transparent focus:bg-white focus:border-brand-border focus:ring-2 focus:ring-brand/5 rounded-xl px-4 py-3.5 text-sm font-medium outline-none transition-all placeholder:text-gray-400"
+                    placeholder="How can we help?"
+                  />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold text-brand ml-1">Message</label>
+                <div className="space-y-2">
+                  <label htmlFor="message" className="text-xs font-bold uppercase tracking-wider text-brand-faint ml-1">Message</label>
                   <textarea 
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="How can we help you today?"
-                    rows={5}
-                    className="bg-[#f8f9fa] border-2 border-transparent focus:border-brand/20 focus:bg-white rounded-2xl px-5 py-4 text-brand font-medium outline-none transition-all w-full resize-none placeholder:text-brand-faint"
+                    id="message"
+                    name="message"
                     required
-                  />
+                    rows={5}
+                    value={formData.message}
+                    onChange={handleChange}
+                    className="w-full bg-[#f4f4f4] border-transparent focus:bg-white focus:border-brand-border focus:ring-2 focus:ring-brand/5 rounded-xl px-4 py-3.5 text-sm font-medium outline-none transition-all placeholder:text-gray-400 resize-none"
+                    placeholder="Provide details about your inquiry..."
+                  ></textarea>
                 </div>
 
                 <button 
                   type="submit"
-                  disabled={isSubmitting || !name || !email || !message}
-                  className="mt-2 w-full bg-brand hover:bg-[#00393c] text-white font-black py-4 rounded-2xl transition-all shadow-lg hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
+                  disabled={isSubmitting}
+                  className="w-full md:w-auto bg-brand hover:bg-brand/90 text-white font-extrabold px-8 py-3.5 rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 mt-4 disabled:opacity-70"
                 >
-                  {isSubmitting ? (
-                    "Sending..."
-                  ) : (
-                    <>
-                      Send Message
-                      <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    </>
-                  )}
+                  {isSubmitting ? <PremiumLoader className="text-white" /> : "Send Message"}
+                  {!isSubmitting && <Send className="w-4 h-4 ml-1" />}
                 </button>
-
-                <div className="flex items-center justify-center gap-2 mt-4 text-xs font-bold text-brand-faint">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                  <span>Your data is protected by industry-standard encryption.</span>
-                </div>
               </form>
-            </div>
+            )}
           </div>
-          
+
         </div>
       </div>
     </div>

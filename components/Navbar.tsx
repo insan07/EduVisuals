@@ -335,7 +335,7 @@ export default function Navbar() {
                           { label: "Overview Dashboard", tab: "overview", icon: HomeIcon },
                           { label: "My Downloads", tab: "downloads", icon: DownloadIcon },
                           { label: "Saved Collections", tab: "collections", icon: HeartIcon },
-                          { label: "Subscription Billing", tab: "subscription", icon: StarIcon },
+                          // { label: "Subscription Billing", tab: "subscription", icon: StarIcon },
                           { label: "Account Settings", tab: "settings", icon: SettingsIcon },
                         ].map((item) => (
                           <Link

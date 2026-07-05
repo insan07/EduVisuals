@@ -227,7 +227,7 @@ export default function UserDashboard() {
               { id: "overview", label: "Overview", icon: HomeIcon },
               { id: "downloads", label: "My Downloads", icon: Download },
               { id: "collections", label: "Saved Collections", icon: Heart },
-              { id: "subscription", label: "Subscription", icon: Star },
+              // { id: "subscription", label: "Subscription", icon: Star },
               { id: "settings", label: "Settings", icon: Settings },
             ].map((tab) => {
               const TabIcon = tab.icon;
@@ -940,7 +940,7 @@ export default function UserDashboard() {
           { id: "overview", label: "Home", icon: HomeIcon },
           { id: "downloads", label: "Downloads", icon: Download },
           { id: "collections", label: "Saved", icon: Heart },
-          { id: "subscription", label: "Billing", icon: Star },
+          // { id: "subscription", label: "Billing", icon: Star },
         ].map((tab) => {
           const TabIcon = tab.icon;
           const active = activeTab === tab.id;
