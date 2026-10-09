@@ -29,28 +29,11 @@ export default function Footer() {
           {/* Brand Info */}
           <div className="lg:col-span-5 flex flex-col gap-6">
             <Link href="/" className="flex items-center gap-2 group w-max">
-              <div className="relative flex items-center justify-center w-6 h-6 transition-transform duration-300 group-hover:scale-110">
-                <div className="absolute inset-0 bg-emerald-400/20 blur-md rounded-full group-hover:bg-emerald-400/40 transition-colors" />
-                <div
-                  className="relative z-10"
-                  style={{
-                    backgroundColor: "#ffffff",
-                    maskImage: "url('/logo.png?v=3')",
-                    WebkitMaskImage: "url('/logo.png?v=3')",
-                    maskSize: "100%",
-                    WebkitMaskSize: "100%",
-                    maskRepeat: "no-repeat",
-                    WebkitMaskRepeat: "no-repeat",
-                    maskPosition: "center",
-                    WebkitMaskPosition: "center",
-                    width: "100%",
-                    height: "100%",
-                  }}
-                />
-              </div>
-              <span className="text-white font-bold text-xl md:text-2xl tracking-tight">
-                Learn<span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-emerald-300">pik</span>
-              </span>
+              <img 
+                src="/logo-white.png?v=4" 
+                alt="Learnpik" 
+                className="h-7 md:h-8 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              />
             </Link>
             
             <p className="text-white/60 text-sm font-medium leading-relaxed max-w-sm">

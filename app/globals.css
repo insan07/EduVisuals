@@ -109,3 +109,46 @@ body {
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* 3D Liquid Animations */
+@keyframes liquidFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(1deg);
+  }
+}
+
+@keyframes liquidPulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes liquidShimmer {
+  0% {
+    transform: translateX(-100%) rotate(25deg);
+  }
+  100% {
+    transform: translateX(200%) rotate(25deg);
+  }
+}
+
+.animate-liquid-float {
+  animation: liquidFloat 6s ease-in-out infinite;
+}
+
+.animate-liquid-pulse {
+  animation: liquidPulse 4s ease-in-out infinite;
+}
+
+.animate-liquid-shimmer {
+  animation: liquidShimmer 5s ease-in-out infinite;
+}
+

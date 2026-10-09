@@ -31,24 +31,11 @@ export default function UploaderDashboardLayout({
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between bg-white border-b border-brand-border px-4 py-3 sticky top-0 z-40">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="relative flex items-center justify-center w-7 h-7">
-            <div
-              style={{
-                backgroundColor: "#073238",
-                maskImage: "url('/logo.png?v=2')",
-                WebkitMaskImage: "url('/logo.png?v=2')",
-                maskSize: "180%",
-                WebkitMaskSize: "180%",
-                maskRepeat: "no-repeat",
-                WebkitMaskRepeat: "no-repeat",
-                maskPosition: "center",
-                WebkitMaskPosition: "center",
-                width: "100%",
-                height: "100%",
-              }}
-            />
-          </div>
-          <span className="font-black text-brand text-lg tracking-tight">Learnpik</span>
+          <img 
+            src="/logo.png?v=4" 
+            alt="Learnpik" 
+            className="h-7 w-auto object-contain"
+          />
         </Link>
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -67,26 +54,11 @@ export default function UploaderDashboardLayout({
         <div className="p-6 flex-1 flex flex-col">
           
           <Link href="/" className="flex items-center gap-2 group mb-8">
-            <div className="relative flex items-center justify-center w-7 h-7 transition-transform duration-300 group-hover:scale-110">
-              <div
-                style={{
-                  backgroundColor: "#073238",
-                  maskImage: "url('/logo.png?v=3')",
-                  WebkitMaskImage: "url('/logo.png?v=3')",
-                  maskSize: "100%",
-                  WebkitMaskSize: "100%",
-                  maskRepeat: "no-repeat",
-                  WebkitMaskRepeat: "no-repeat",
-                  maskPosition: "center",
-                  WebkitMaskPosition: "center",
-                  width: "100%",
-                  height: "100%",
-                }}
-              />
-            </div>
-            <span className="text-brand font-black text-xl tracking-tight leading-none">
-              Learn<span className="text-brand group-hover:text-brand transition-colors">pik</span>
-            </span>
+            <img 
+              src="/logo.png?v=4" 
+              alt="Learnpik" 
+              className="h-7 md:h-8 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+            />
           </Link>
 
           <div className="flex items-center gap-3 mb-8">

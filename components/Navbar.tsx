@@ -195,26 +195,11 @@ export default function Navbar() {
           {/* Left: Logo */}
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 group z-50">
-              <div className="relative flex items-center justify-center w-6 h-6 transition-transform duration-300 group-hover:scale-110 translate-y-0.99">
-                <div
-                  style={{
-                    backgroundColor: "#073238",
-                    maskImage: "url('/logo.png?v=3')",
-                    WebkitMaskImage: "url('/logo.png?v=3')",
-                    maskSize: "100%",
-                    WebkitMaskSize: "100%",
-                    maskRepeat: "no-repeat",
-                    WebkitMaskRepeat: "no-repeat",
-                    maskPosition: "center",
-                    WebkitMaskPosition: "center",
-                    width: "100%",
-                    height: "100%",
-                  }}
-                />
-              </div>
-              <span className="text-brand font-bold text-xl md:text-2xl tracking-tight">
-                Learn<span className="text-brand group-hover:text-brand transition-colors">pik</span>
-              </span>
+              <img 
+                src="/logo.png?v=4" 
+                alt="Learnpik" 
+                className="h-7 md:h-8 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              />
             </Link>
 
             {/* Desktop Navigation Links */}

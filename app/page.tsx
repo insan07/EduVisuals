@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { useAuthModal } from "@/store/useAuthModal";
 import { useAuth } from "@/hooks/useAuth";
 import SearchBar from "@/components/SearchBar";
+import LiquidHero3D from "@/components/LiquidHero3D";
+import PopularCollections from "@/components/PopularCollections";
 import {
   ArrowRight,
   Zap,
@@ -18,7 +20,13 @@ import {
   CheckCircle2,
   Globe2,
   BrainCircuit,
-  LibraryBig
+  LibraryBig,
+  Dna,
+  Atom,
+  FlaskConical,
+  Microscope,
+  Sparkles,
+  Layers
 } from "lucide-react";
 
 export default function Home() {
@@ -46,13 +54,13 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-brand-surface text-brand font-sans">
 
-      {/* 1. HERO SECTION (Split Layout) */}
-      <section className="relative pt-18 pb-4 lg:pb-12 px-4 lg:px-12 max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center min-h-0 lg:min-h-[85vh] overflow-hidden lg:overflow-visible">
+      {/* 1. HERO SECTION (Split Layout with Live 3D Liquid Emblem) */}
+      <section className="relative pt-20 md:pt-24 lg:pt-24 pb-8 lg:pb-16 px-4 lg:px-12 max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center min-h-0 lg:min-h-[85vh] overflow-hidden lg:overflow-visible">
 
         {/* Left Side: Content */}
-        <div className="flex flex-col items-center text-center lg:items-start lg:text-left relative z-20 lg:pr-8 lg:pl-10 w-full">
-          
-          <h1 className="text-5xl md:text-6xl lg:text-[3.25rem] font-black tracking-tight mb-6 md:mb-8 leading-[1.15] lg:leading-[1.05] text-[#111827] w-full">
+        <div className="flex flex-col items-center text-center lg:items-start lg:text-left relative z-20 lg:pr-8 lg:pl-6 w-full">
+
+          <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-black tracking-tight mb-6 md:mb-8 leading-[1.15] lg:leading-[1.05] text-[#111827] w-full">
             <span className="block lg:inline">Learn visually <br className="hidden md:block" /></span>
             <span className="block lg:inline lg:whitespace-nowrap mt-2 lg:mt-0">
               with <br className="block md:hidden" />
@@ -60,7 +68,7 @@ export default function Home() {
             </span>
           </h1>
 
-          <p className="text-lg md:text-xl text-gray-600 max-w-lg mb-8 lg:mb-10 font-medium leading-relaxed mx-auto lg:mx-0">
+          <p className="text-base md:text-xl text-gray-600 max-w-lg mb-8 lg:mb-10 font-medium leading-relaxed mx-auto lg:mx-0">
             Access world-class diagrams, worksheets, mind maps, and illustrations engineered for all major international syllabuses. Accelerate your memory retention today.
           </p>
 
@@ -75,7 +83,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 w-full">
             <Link
               href="/visuals"
-              className="w-full sm:w-auto px-8 py-4 rounded-full font-bold text-white bg-[#0f172a] hover:bg-black transition-colors flex items-center justify-center gap-3 shadow-lg"
+              className="w-full sm:w-auto px-8 py-4 rounded-full font-bold text-white bg-[#073238] hover:bg-[#041a1d] transition-all flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98]"
             >
               <Zap className="w-5 h-5 fill-white text-white" />
               Start Exploring Now
@@ -83,61 +91,14 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right Side: Shuffled Image Grid (3 Images) */}
-        <div className="relative hidden lg:flex w-full h-[300px] sm:h-[400px] lg:h-[500px] items-center justify-center z-10 scale-95 lg:scale-90 mt-4 lg:mt-0">
-          {/* Main Mindmap */}
-          <div className="absolute top-[5%] right-[15%] w-[50%] h-[50%] rounded-3xl overflow-hidden shadow-2xl border-[6px] border-white rotate-6 hover:rotate-0 hover:scale-105 hover:z-50 transition-all duration-500 z-50">
-            <Image src="/mindmap.png" alt="Educational Mindmap" fill className="object-cover" priority />
-          </div>
-          {/* Kids Worksheet */}
-          <div className="absolute bottom-[5%] left-[5%] w-[55%] h-[60%] rounded-3xl overflow-hidden shadow-2xl border-[6px] border-white -rotate-6 hover:rotate-0 hover:scale-105 hover:z-50 transition-all duration-500 z-40">
-            <Image src="/kids.png" alt="Kids Worksheet" fill className="object-cover" />
-          </div>
-          {/* Cheatsheet */}
-          <div className="absolute top-[30%] right-[-5%] w-[45%] h-[45%] rounded-3xl overflow-hidden shadow-xl border-[6px] border-white rotate-12 hover:rotate-0 hover:scale-105 hover:z-50 transition-all duration-500 z-30">
-             <Image src="/cheatsheet.png" alt="Physics Cheat Sheet" fill className="object-cover" />
-          </div>
+        {/* Live 3D Liquid Emblem Hero (Background behind content on Mobile, Right Column on Desktop) */}
+        <div className="absolute inset-0 top-8 sm:top-6 lg:top-0 lg:relative flex w-full items-center justify-center z-10 opacity-30 sm:opacity-40 lg:opacity-100 pointer-events-none lg:pointer-events-auto scale-90 sm:scale-100 lg:scale-100 transition-all duration-500">
+          <LiquidHero3D />
         </div>
       </section>
 
-      {/* POPULAR COLLECTIONS */}
-      <section className="py-6 lg:py-16 px-4 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6 lg:mb-12">
-            <h2 className="text-xl md:text-2xl font-black text-brand mb-3 tracking-tight">Explore Popular Collections</h2>
-            <p className="text-gray-500 font-medium max-w-xl text-sm md:text-base">
-              Discover our most downloaded premium resource packs, curated specifically for top-performing students and educators.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { id: 1, title: "Biology Mind Maps", count: "1,240 Visuals", image: "/mindmap.png", link: "/visuals?q=biology" },
-              { id: 2, title: "Kids Worksheets", count: "850 Visuals", image: "/kids.png", link: "/visuals?q=kids" },
-              { id: 3, title: "Physics Cheat Sheets", count: "420 Visuals", image: "/cheatsheet.png", link: "/visuals?q=physics" },
-              { id: 4, title: "Astronomy Illustrations", count: "315 Visuals", image: "/illustration.png", link: "/visuals?q=astronomy" },
-              { id: 5, title: "Medical & Anatomy", count: "930 Visuals", image: "/diagram.png", link: "/visuals?q=anatomy" },
-              { id: 6, title: "Revision Flashcards", count: "1,500 Visuals", image: "/flashcard.png", link: "/visuals?q=flashcard" },
-            ].map(col => (
-              <Link href={col.link} key={col.id} className="group flex flex-col w-full rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-200 bg-white">
-                <div className="relative h-48 w-full overflow-hidden border-b border-gray-100">
-                  <Image src={col.image} alt={col.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
-                </div>
-                <div className="p-5 flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{col.count}</span>
-                  <h3 className="text-base font-bold text-brand tracking-tight">{col.title}</h3>
-                </div>
-              </Link>
-            ))}
-          </div>
-          
-          <div className="mt-12 flex justify-center">
-             <Link href="/visuals" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-6 py-3 rounded-lg border border-gray-200 text-brand font-bold bg-white hover:bg-gray-50 transition-colors text-sm shadow-sm">
-                Explore More Collections <ArrowRight className="w-4 h-4" />
-             </Link>
-          </div>
-        </div>
-      </section>
+      {/* DYNAMIC POPULAR COLLECTIONS (AUTO-GENERATED FROM UPLOADS) */}
+      <PopularCollections />
 
       {/* 2. STATS BAR */}
       <section className="bg-white border-y border-brand-border py-12 relative z-20">

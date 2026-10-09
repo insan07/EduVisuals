@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowRight, CheckCircle2, Shield, Upload, FileImage , Sparkles, GraduationCap } from "lucide-react";
+import { ArrowRight, CheckCircle2, Shield, Upload, FileImage, GraduationCap } from "lucide-react";
 import Link from "next/link";
 import { PremiumLoader } from "@/components/PremiumLoader";
 
@@ -119,56 +119,40 @@ export default function UploaderOnboardingPage() {
     <div className="min-h-screen flex flex-col md:flex-row bg-white font-sans selection:bg-brand selection:text-white">
       
       {/* LEFT PANEL - BRANDING (Hidden on Mobile, Sticky on Desktop) */}
-      <div className="hidden md:flex w-5/12 bg-gradient-to-br from-[#073238] to-[#041a1d] text-white p-12 flex-col justify-between relative overflow-hidden sticky top-0 h-screen">
+      <div className="hidden md:flex w-5/12 bg-gradient-to-br from-[#073238] to-[#041a1d] text-white p-8 lg:p-10 flex-col justify-between relative overflow-hidden sticky top-0 h-screen">
         {/* Background Decorative Elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-500/10 blur-[100px] rounded-full pointer-events-none" />
         
         <div className="relative z-10 flex flex-col items-start">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group mb-16">
-            <div className="relative flex items-center justify-center w-8 h-8 transition-transform duration-300 group-hover:scale-110">
-              <div
-                style={{
-                  backgroundColor: "#ffffff",
-                  maskImage: "url('/logo.png?v=2')",
-                  WebkitMaskImage: "url('/logo.png?v=2')",
-                  maskSize: "180%",
-                  WebkitMaskSize: "180%",
-                  maskRepeat: "no-repeat",
-                  WebkitMaskRepeat: "no-repeat",
-                  maskPosition: "center",
-                  WebkitMaskPosition: "center",
-                  width: "100%",
-                  height: "100%",
-                }}
-              />
-            </div>
-            <span className="font-black text-2xl tracking-tight">
-              Learnpik
-            </span>
+          <Link href="/" className="flex items-center gap-2.5 group mb-6 lg:mb-10">
+            <img 
+              src="/logo-white.png?v=4" 
+              alt="Learnpik" 
+              className="h-8 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+            />
           </Link>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 mb-6 text-xs font-bold shadow-sm self-start">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+          <div className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 mb-4 lg:mb-6 text-xs font-bold shadow-sm self-start tracking-wide">
             <span>Creator Program</span>
           </div>
 
-          <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-teal-100">
+          <h1 className="text-3xl lg:text-4xl xl:text-5xl font-extrabold tracking-tight leading-[1.15] mb-4 lg:mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-teal-100">
             Empower the Next Generation of Learners.
           </h1>
-          <p className="text-lg text-white/70 font-medium max-w-md leading-relaxed">
+          <p className="text-sm lg:text-base text-white/70 font-medium max-w-md leading-relaxed">
             Join thousands of top educators sharing premium visual resources, study guides, and diagrams with a global audience.
           </p>
         </div>
 
-        <div className="relative z-10 flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="w-6 h-6 text-emerald-300" />
+        <div className="relative z-10 flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm mt-6">
+          <div className="w-11 h-11 lg:w-12 lg:h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
+            <GraduationCap className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-300" />
           </div>
           <div>
             <p className="text-sm font-bold text-white mb-0.5">Global Reach</p>
-            <p className="text-xs text-white/60 font-medium">Your content will help students from primary to university level master complex concepts instantly.</p>
+            <p className="text-xs text-white/60 font-medium leading-relaxed">Your content will help students from primary to university level master complex concepts instantly.</p>
           </div>
         </div>
       </div>
@@ -178,29 +162,14 @@ export default function UploaderOnboardingPage() {
         
         {/* Mobile Logo (Only visible on small screens) */}
         <div className="md:hidden p-6 border-b border-gray-100 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="relative flex items-center justify-center w-6 h-6">
-              <div
-                style={{
-                  backgroundColor: "#073238",
-                  maskImage: "url('/logo.png?v=2')",
-                  WebkitMaskImage: "url('/logo.png?v=2')",
-                  maskSize: "180%",
-                  WebkitMaskSize: "180%",
-                  maskRepeat: "no-repeat",
-                  WebkitMaskRepeat: "no-repeat",
-                  maskPosition: "center",
-                  WebkitMaskPosition: "center",
-                  width: "100%",
-                  height: "100%",
-                }}
-              />
-            </div>
-            <span className="font-black text-brand text-lg tracking-tight">
-              Learnpik
-            </span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <img 
+              src="/logo.png?v=4" 
+              alt="Learnpik" 
+              className="h-7 w-auto object-contain"
+            />
           </Link>
-          <span className="text-xs font-bold text-brand bg-brand/5 px-2 py-1 rounded-md">Creator Program</span>
+          <span className="text-xs font-bold text-brand bg-brand/5 px-3 py-1.5 rounded-full border border-brand/10">Creator Program</span>
         </div>
 
         {/* Scrollable Form Area */}
